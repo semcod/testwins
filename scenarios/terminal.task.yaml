@@ -1,0 +1,11 @@
+schema: testwins.task/v1
+id: terminal-smoke
+backend: terminal
+command: python
+args: [examples/terminal/prompt.py]
+timeout_seconds: 20
+steps:
+  - {action: expect, value: 'Name: '}
+  - {action: send, value: 'Testwins'}
+  - {action: expect, value: 'Hello, Testwins!'}
+  - {action: eof}

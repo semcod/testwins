@@ -1,0 +1,32 @@
+services:
+  landing:
+    build:
+      context: ./landing
+    ports: ["127.0.0.1:8090:8080"]
+    read_only: true
+    tmpfs: [/tmp, /var/cache/nginx, /var/run]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 128m
+    pids_limit: 64
+  monitor:
+    build:
+      context: .
+      dockerfile: docker/live.Dockerfile
+    init: true
+    depends_on: [landing]
+    command: ["--config", "/work/landing.watch.yaml", "--root", "/work", "--output", "/artifacts", "--serve", "--host", "0.0.0.0", "--allow-expose"]
+    ports: ["127.0.0.1:9067:9067"]
+    volumes:
+      - ./configs/live/docker.watch.yaml:/work/landing.watch.yaml:ro
+      - live-artifacts:/artifacts
+    read_only: true
+    tmpfs: [/tmp, /home/pwuser]
+    shm_size: 512m
+    mem_limit: 3g
+    cpus: 3
+    pids_limit: 384
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+volumes:
+  live-artifacts:

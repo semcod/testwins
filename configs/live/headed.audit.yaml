@@ -1,0 +1,14 @@
+schema: testwins.config/v1
+project: live-novnc
+base_url: http://landing:8080
+headless: false
+sandbox: false
+color_scheme: dark
+axe:
+  enabled: true
+  required: true
+  path: /opt/testwins-assets/axe.min.js
+capture:
+  repeats: 2
+  scroll_tiles: 1
+  max_cell_seconds: 60

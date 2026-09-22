@@ -1,0 +1,24 @@
+schema: testwins.config/v1
+project: my-application
+base_url: http://sut:8080
+matrix: cdp
+routes:
+  - {id: home, path: /}
+# Add known UI contracts in journeys. No automatic click on unknown/destructive actions.
+journeys: []
+allowed_origins: []
+capture:
+  repeats: 2
+  scroll_tiles: 4
+  timeout_ms: 8000
+  mask_selectors: ['input', 'textarea', '[contenteditable=true]', '[data-private]']
+axe:
+  enabled: true
+  required: true
+rules:
+  alignment: []
+crawl:
+  enabled: false
+  allow_paths: ['/docs/*', '/products/*']
+  max_pages: 10
+suppressions: []

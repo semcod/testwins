@@ -1,0 +1,1271 @@
+{
+  "schema": "testwins.gui-catalog/v1",
+  "exhaustive": false,
+  "classes": [
+    {
+      "id": "GUI-TEXT-OVERLAP",
+      "group": "layout",
+      "name": "Nachodzenie tekstu",
+      "possible_causes": [
+        "absolute/fixed poza przepływem",
+        "ujemny margines",
+        "transformacja",
+        "zbyt ciasny line-height"
+      ],
+      "confirmation": "Wyłącz pojedynczo podejrzane transformacje/pozycjonowanie w kopii widoku i zmierz przecięcie ponownie.",
+      "detection": "TW-TEXT-OVERLAP",
+      "automatic": true,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-TEXT-CLIPPED",
+      "group": "layout",
+      "name": "Obcięty tekst",
+      "possible_causes": [
+        "overflow hidden/clip",
+        "ograniczenie wysokości",
+        "zbyt długi tekst"
+      ],
+      "confirmation": "Sprawdź przycinających przodków i porównaj ich clientHeight z zakresem tekstu.",
+      "detection": "TW-TEXT-CLIPPED",
+      "automatic": true,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-VIEWPORT-OVERFLOW",
+      "group": "layout",
+      "name": "Poziomy scroll całego dokumentu",
+      "possible_causes": [
+        "min-content flex/grid",
+        "szeroki element",
+        "stała szerokość",
+        "błąd viewportu"
+      ],
+      "confirmation": "Zidentyfikuj pierwszy element poza viewportem; sprawdź min-width i łamanie tekstu.",
+      "detection": "TW-VIEWPORT-OVERFLOW",
+      "automatic": true,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-ALIGNMENT",
+      "group": "layout",
+      "name": "Nierówne krawędzie",
+      "possible_causes": [
+        "margin/padding/gap",
+        "baseline",
+        "border-box",
+        "różny rozmiar fontu"
+      ],
+      "confirmation": "Porównaj deklarowany kontrakt krawędzi w tych samych współrzędnych.",
+      "detection": "TW-ALIGNMENT",
+      "automatic": true,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-ALIGNMENT-CANDIDATE",
+      "group": "layout",
+      "name": "Odchylenie wyrównania rodzeństwa",
+      "possible_causes": [
+        "celowy akcent lub odmienne odstępy elementu"
+      ],
+      "confirmation": "Najpierw potwierdź zamiar projektowy; dopiero potem utwórz kontrakt.",
+      "detection": "TW-ALIGNMENT-CANDIDATE",
+      "automatic": true,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-SPACING",
+      "group": "layout",
+      "name": "Niespójne odstępy",
+      "possible_causes": [
+        "różne tokeny",
+        "margin collapsing",
+        "gap z paddingiem"
+      ],
+      "confirmation": "Porównaj odstępy między jednorodnymi elementami.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-GRID-WRAP",
+      "group": "layout",
+      "name": "Błędna liczba kolumn",
+      "possible_causes": [
+        "breakpoint",
+        "minmax",
+        "intrinsic size"
+      ],
+      "confirmation": "Sprawdź rozmiary w wąskim sąsiedztwie breakpointu.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-FLEX-SHRINK",
+      "group": "layout",
+      "name": "Nadmierne ściskanie kontrolek",
+      "possible_causes": [
+        "flex-shrink",
+        "min-width auto",
+        "długi tekst"
+      ],
+      "confirmation": "Zmierz rozmiary bazowe i minimalne; test min-width:0 w kopii.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-STICKY",
+      "group": "layout",
+      "name": "Sticky zachodzi na treść",
+      "possible_causes": [
+        "błędny scroll ancestor",
+        "inset",
+        "brak miejsca"
+      ],
+      "confirmation": "Przewiń stronę i porównaj położenie kontrolki względem przodka.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-EMPTY-UI",
+      "group": "layout",
+      "name": "Pusty render",
+      "possible_causes": [
+        "błąd inicjalizacji",
+        "opóźnienie",
+        "niewłaściwa trasa",
+        "celowo pusta strona"
+      ],
+      "confirmation": "Sprawdź jawny ready selector i oczekiwaną zawartość, bez zgadywania błędu API.",
+      "detection": "TW-EMPTY-UI",
+      "automatic": true,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-CONTROL-OCCLUDED",
+      "group": "layers",
+      "name": "Zasłonięta kontrolka",
+      "possible_causes": [
+        "overlay",
+        "stacking context",
+        "fixed header",
+        "pointer interception"
+      ],
+      "confirmation": "Porównaj elementFromPoint w kilku punktach i łańcuch przodków warstw.",
+      "detection": "TW-CONTROL-OCCLUDED",
+      "automatic": true,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-POINTER-DISABLED",
+      "group": "layers",
+      "name": "Interaktywna kontrolka ignoruje wskaźnik",
+      "possible_causes": [
+        "pointer-events none",
+        "stan kontrolki",
+        "celowa propagacja"
+      ],
+      "confirmation": "Sprawdź kontrakt aktywności i działanie klawiaturą.",
+      "detection": "TW-POINTER-DISABLED",
+      "automatic": true,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-MODAL-BACKDROP",
+      "group": "layers",
+      "name": "Błędny backdrop",
+      "possible_causes": [
+        "warstwa pod dialogiem/nad dialogiem",
+        "pointer-events"
+      ],
+      "confirmation": "Kliknij jawnie dozwolone punkty i sprawdź oczekiwany stan.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-POPOVER-CLIP",
+      "group": "layers",
+      "name": "Menu/tooltip przycięty",
+      "possible_causes": [
+        "overflow przodka",
+        "portal",
+        "top-layer"
+      ],
+      "confirmation": "Sprawdź przycinający element przy otwartym menu.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-TOOLTIP-HOVER",
+      "group": "layers",
+      "name": "Tooltip znika lub zasłania treść",
+      "possible_causes": [
+        "obszar hover nie obejmuje tooltipu",
+        "warstwy"
+      ],
+      "confirmation": "Przejdź wskaźnikiem i klawiaturą między wyzwalaczem a treścią.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-DIALOG-OFFSCREEN",
+      "group": "layers",
+      "name": "Dialog poza ekranem",
+      "possible_causes": [
+        "centrowanie",
+        "zbyt duża wysokość",
+        "brak scrolla"
+      ],
+      "confirmation": "Sprawdź mały viewport, zoom i widoczność przycisku zamknięcia.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-HITBOX",
+      "group": "layers",
+      "name": "Obszar kliknięcia niezgodny z obrazem",
+      "possible_causes": [
+        "transform",
+        "SVG",
+        "przezroczysta warstwa"
+      ],
+      "confirmation": "Porównaj hit-test z konturem wizualnym i kontraktem działania.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-SCROLL-LOCK",
+      "group": "layers",
+      "name": "Scroll zablokowany po zamknięciu",
+      "possible_causes": [
+        "nieusunięta blokada body",
+        "stan modalu"
+      ],
+      "confirmation": "Otwórz/zamknij dialog i porównaj możliwość przewijania.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-VIEWPORT-META",
+      "group": "responsive",
+      "name": "Brak meta viewport",
+      "possible_causes": [
+        "pominięta deklaracja",
+        "szablon bazowy"
+      ],
+      "confirmation": "Porównaj layout viewport, visual viewport i screenshot.",
+      "detection": "TW-VIEWPORT-META",
+      "automatic": true,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-TARGET-SMALL",
+      "group": "responsive",
+      "name": "Mały cel dotykowy",
+      "possible_causes": [
+        "padding",
+        "zagęszczenie",
+        "niewłaściwy wariant mobilny"
+      ],
+      "confirmation": "Sprawdź rozmiar i wyjątki dotyczące odstępu oraz alternatywnej kontrolki.",
+      "detection": "TW-TARGET-SMALL",
+      "automatic": true,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-ZOOM-REFLOW",
+      "group": "responsive",
+      "name": "Utrata treści przy zoomie",
+      "possible_causes": [
+        "sztywne rozmiary",
+        "clipping",
+        "fixed element"
+      ],
+      "confirmation": "Sprawdź reflow i zachowanie funkcji przy powiększeniu.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-ORIENTATION",
+      "group": "responsive",
+      "name": "Błąd po obrocie",
+      "possible_causes": [
+        "nieprzeliczony stan",
+        "media query",
+        "viewport units"
+      ],
+      "confirmation": "Zmień orientację i ponów kontrakty widoczności.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-SOFT-KEYBOARD",
+      "group": "responsive",
+      "name": "Klawiatura ekranowa zasłania pole",
+      "possible_causes": [
+        "visual viewport",
+        "scroll restoration",
+        "fixed footer"
+      ],
+      "confirmation": "Przetestuj na rzeczywistym urządzeniu z klawiaturą ekranową.",
+      "detection": "manual",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-SAFE-AREA",
+      "group": "responsive",
+      "name": "Element pod wycięciem ekranu",
+      "possible_causes": [
+        "nieuwzględnione safe-area insets"
+      ],
+      "confirmation": "Sprawdź na docelowym urządzeniu i orientacji.",
+      "detection": "manual",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-DPR",
+      "group": "responsive",
+      "name": "Artefakty przy innej skali",
+      "possible_causes": [
+        "zaokrąglenia",
+        "raster",
+        "canvas backing store"
+      ],
+      "confirmation": "Porównaj DPR przy tej samej geometrii CSS.",
+      "detection": "vision",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-HOVER-TOUCH",
+      "group": "responsive",
+      "name": "Funkcja wymaga hover na dotyku",
+      "possible_causes": [
+        "niewłaściwy warunek pointer/hover"
+      ],
+      "confirmation": "Wykonaj scenariusz dotykiem bez symulowanego hover.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-FONT-PENDING",
+      "group": "typography",
+      "name": "Fonty nie zakończyły ładowania",
+      "possible_causes": [
+        "opóźnienie fontu",
+        "deklaracje font-face",
+        "fallback"
+      ],
+      "confirmation": "Powtórz pomiar po document.fonts.ready i sprawdź zmianę metryk.",
+      "detection": "TW-FONT-PENDING",
+      "automatic": true,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-FONT-SIZE",
+      "group": "typography",
+      "name": "Bardzo mały tekst",
+      "possible_causes": [
+        "token rozmiaru",
+        "transform scale",
+        "rem bazowy"
+      ],
+      "confirmation": "Porównaj rozmiar i wymagania interfejsu; to heurystyka, nie certyfikat WCAG.",
+      "detection": "TW-TEXT-SMALL",
+      "automatic": true,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-FONT-FALLBACK",
+      "group": "typography",
+      "name": "Inny font lub brak glifów",
+      "possible_causes": [
+        "fallback",
+        "brak unicode range",
+        "niedostępny font"
+      ],
+      "confirmation": "Sprawdź dostępność konkretnego fontu i widoczne glify.",
+      "detection": "vision",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-LINE-HEIGHT",
+      "group": "typography",
+      "name": "Za ciasna interlinia",
+      "possible_causes": [
+        "line-height",
+        "skrypty pisma",
+        "diakrytyka"
+      ],
+      "confirmation": "Porównaj granice kolejnych linii i czytelność znaków.",
+      "detection": "vision",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-RTL",
+      "group": "typography",
+      "name": "Błędy pisma od prawej",
+      "possible_causes": [
+        "fizyczne left/right",
+        "kierunek",
+        "mieszane liczby"
+      ],
+      "confirmation": "Uruchom osobny stan RTL i sprawdź kolejność logiczną.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-LOCALIZATION",
+      "group": "typography",
+      "name": "Długie tłumaczenie psuje układ",
+      "possible_causes": [
+        "sztywne rozmiary",
+        "brak elastycznego zawijania"
+      ],
+      "confirmation": "Użyj pseudo-lokalizacji i najdłuższych zaakceptowanych etykiet.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-ENCODING",
+      "group": "typography",
+      "name": "Niepoprawne znaki",
+      "possible_causes": [
+        "kodowanie",
+        "podwójne dekodowanie",
+        "font"
+      ],
+      "confirmation": "Porównaj tekst DOM z oczekiwanym tekstem.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-TRUNCATION-MEANING",
+      "group": "typography",
+      "name": "Ellipsis ukrywa istotną treść",
+      "possible_causes": [
+        "celowe skracanie bez alternatywy"
+      ],
+      "confirmation": "Sprawdź dostęp do pełnej wartości i jej znaczenie dla zadania.",
+      "detection": "manual",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-IMAGE-BROKEN",
+      "group": "assets",
+      "name": "Uszkodzony obraz",
+      "possible_causes": [
+        "nieudane ładowanie/dekodowanie",
+        "nieobsługiwany zasób"
+      ],
+      "confirmation": "naturalWidth=0 potwierdza brak obrazu, ale nie rozstrzyga HTTP/CSP/dekodowania.",
+      "detection": "TW-IMAGE-BROKEN",
+      "automatic": true,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-IMAGE-DISTORTED",
+      "group": "assets",
+      "name": "Zniekształcony obraz",
+      "possible_causes": [
+        "aspect ratio",
+        "object-fit",
+        "rozmiary CSS"
+      ],
+      "confirmation": "Porównaj docelowy kadr i oczekiwane proporcje.",
+      "detection": "vision",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-IMAGE-BLUR",
+      "group": "assets",
+      "name": "Rozmyty obraz/ikona",
+      "possible_causes": [
+        "niewłaściwy raster lub skalowanie"
+      ],
+      "confirmation": "Porównaj piksele źródłowe i docelowy DPR z referencją.",
+      "detection": "vision",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-ICON-WRONG",
+      "group": "assets",
+      "name": "Błędna ikona",
+      "possible_causes": [
+        "mapowanie symbolu",
+        "font ikon",
+        "wariant"
+      ],
+      "confirmation": "Porównaj ikonę z opisanym kontraktem produktu.",
+      "detection": "vision",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-VIDEO",
+      "group": "assets",
+      "name": "Brak odtwarzania lub sterowania",
+      "possible_causes": [
+        "format",
+        "autoplay",
+        "kontrolki",
+        "zgoda"
+      ],
+      "confirmation": "Uruchom jawny scenariusz odtwarzania w docelowej przeglądarce.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-CANVAS",
+      "group": "assets",
+      "name": "Błędny canvas/WebGL",
+      "possible_causes": [
+        "rozmiar bufora",
+        "kontekst GPU",
+        "render loop"
+      ],
+      "confirmation": "Porównaj screenshot i jawny stan; DOM nie widzi wnętrza canvasa.",
+      "detection": "vision",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-SVG",
+      "group": "assets",
+      "name": "Błędna ikona SVG",
+      "possible_causes": [
+        "viewBox",
+        "clipping",
+        "fill/currentColor"
+      ],
+      "confirmation": "Zbadaj granice widoku i render w jasnym/ciemnym motywie.",
+      "detection": "vision",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-LAZY-LOAD",
+      "group": "assets",
+      "name": "Niewczytane treści po scrollu",
+      "possible_causes": [
+        "intersection threshold",
+        "root observer",
+        "stan listy"
+      ],
+      "confirmation": "Przewiń do jawnego zakresu i sprawdź oczekiwaną treść.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-CONTRAST",
+      "group": "accessibility",
+      "name": "Niski kontrast tekstu",
+      "possible_causes": [
+        "kolor",
+        "przezroczystość",
+        "tło",
+        "gradient"
+      ],
+      "confirmation": "Uruchom axe i ręcznie oceń obrazy/gradienty oraz stany.",
+      "detection": "axe",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-ACCESSIBLE-NAME",
+      "group": "accessibility",
+      "name": "Brak nazwy kontrolki",
+      "possible_causes": [
+        "brak label/aria",
+        "usunięte powiązanie"
+      ],
+      "confirmation": "Sprawdź nazwę dostępną i zrozumiałość kontekstu.",
+      "detection": "axe",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-FOCUS-OBSCURED",
+      "group": "accessibility",
+      "name": "Fokus na zasłoniętym elemencie",
+      "possible_causes": [
+        "overlay",
+        "brak scrollIntoView",
+        "sticky"
+      ],
+      "confirmation": "Zbadaj rzeczywisty fokus i hit-test; dodaj scenariusz klawiaturowy.",
+      "detection": "TW-FOCUS-OBSCURED",
+      "automatic": true,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-ARIA-HIDDEN-FOCUS",
+      "group": "accessibility",
+      "name": "Fokus wewnątrz aria-hidden",
+      "possible_causes": [
+        "niezsynchronizowany stan dialogu",
+        "błędne ukrywanie"
+      ],
+      "confirmation": "Sprawdź aktywny element i aria-hidden w jego przodkach.",
+      "detection": "TW-ARIA-HIDDEN-FOCUS",
+      "automatic": true,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-KEYBOARD-TRAP",
+      "group": "accessibility",
+      "name": "Pułapka klawiaturowa",
+      "possible_causes": [
+        "obsługa Tab/Escape",
+        "stan modalu"
+      ],
+      "confirmation": "Wykonaj pełną sekwencję wejścia i wyjścia klawiaturą.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-FOCUS-ORDER",
+      "group": "accessibility",
+      "name": "Nielogiczna kolejność fokusu",
+      "possible_causes": [
+        "tabindex",
+        "kolejność DOM vs CSS"
+      ],
+      "confirmation": "Porównaj sekwencję Tab z zadaniem użytkownika.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-FOCUS-VISIBLE",
+      "group": "accessibility",
+      "name": "Brak wskaźnika fokusu",
+      "possible_causes": [
+        "outline none",
+        "niewidoczne style"
+      ],
+      "confirmation": "Sprawdź każdy stan klawiaturowy na screenshotach.",
+      "detection": "vision",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-LANDMARKS",
+      "group": "accessibility",
+      "name": "Niepoprawna semantyka struktur",
+      "possible_causes": [
+        "role",
+        "nagłówki",
+        "landmarki"
+      ],
+      "confirmation": "Uruchom automatyczne reguły i ocenę semantyki.",
+      "detection": "axe",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-STATUS-ANNOUNCEMENT",
+      "group": "accessibility",
+      "name": "Zmiana nieogłaszana czytnikowi",
+      "possible_causes": [
+        "brak live region",
+        "timing",
+        "aria-busy"
+      ],
+      "confirmation": "Sprawdź z czytnikiem ekranu w realnym przebiegu.",
+      "detection": "manual",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-COLOR-ONLY",
+      "group": "accessibility",
+      "name": "Znaczenie tylko przez kolor",
+      "possible_causes": [
+        "brak tekstu/ikony/wzoru"
+      ],
+      "confirmation": "Sprawdź rozróżnialność bez percepcji koloru.",
+      "detection": "manual",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-EXPECTATION",
+      "group": "forms",
+      "name": "Niespełnione oczekiwanie UI",
+      "possible_causes": [
+        "stan aplikacji",
+        "błędne powiązanie",
+        "asynchroniczność"
+      ],
+      "confirmation": "Odtwórz jawny kontrakt i odróżnij błąd od nieukończonego testu.",
+      "detection": "TW-EXPECTATION",
+      "automatic": true,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-VALIDATION",
+      "group": "forms",
+      "name": "Błędna walidacja pola",
+      "possible_causes": [
+        "reguła",
+        "format",
+        "moment walidacji"
+      ],
+      "confirmation": "Sprawdź zaakceptowane i odrzucone klasy danych.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-ERROR-PLACEMENT",
+      "group": "forms",
+      "name": "Komunikat błędu w złym miejscu",
+      "possible_causes": [
+        "layout",
+        "brak powiązania",
+        "scroll"
+      ],
+      "confirmation": "Sprawdź położenie i identyfikację konkretnego pola.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-SUBMIT-DUPLICATE",
+      "group": "forms",
+      "name": "Podwójne wysłanie",
+      "possible_causes": [
+        "brak blokady",
+        "retry",
+        "obsługa wielu zdarzeń"
+      ],
+      "confirmation": "Sprawdź oczekiwany stan UI; bez API nie potwierdzaj podwójnego zapisu w bazie.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-STATE-LOSS",
+      "group": "forms",
+      "name": "Utrata wpisanych danych",
+      "possible_causes": [
+        "remount",
+        "navigation",
+        "reset form"
+      ],
+      "confirmation": "Wprowadź dane testowe, zmień stan i porównaj pola.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-AUTOFILL",
+      "group": "forms",
+      "name": "Autofill zmienia czytelność",
+      "possible_causes": [
+        "styl user-agent",
+        "typ pola",
+        "kontrast"
+      ],
+      "confirmation": "Sprawdź rzeczywisty autofill docelowej przeglądarki.",
+      "detection": "manual",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-IME",
+      "group": "forms",
+      "name": "Uszkodzone wprowadzanie złożone",
+      "possible_causes": [
+        "composition events",
+        "filtrowanie input"
+      ],
+      "confirmation": "Przetestuj rzeczywiste IME i sekwencje composition.",
+      "detection": "manual",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-DISABLED-STATE",
+      "group": "forms",
+      "name": "Błędna aktywność kontrolki",
+      "possible_causes": [
+        "stan formularza",
+        "race",
+        "disabled/inert"
+      ],
+      "confirmation": "Użyj jawnego kontraktu aktywności dla zestawu danych.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-LINK-TARGET",
+      "group": "navigation",
+      "name": "Link prowadzi w złe miejsce",
+      "possible_causes": [
+        "routing",
+        "base path",
+        "błędny href"
+      ],
+      "confirmation": "Sprawdź docelowy URL/stan po dozwolonym kliknięciu.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-BACK-FORWARD",
+      "group": "navigation",
+      "name": "Back/forward psuje stan",
+      "possible_causes": [
+        "history",
+        "router",
+        "cache"
+      ],
+      "confirmation": "Wykonaj nawigację w obie strony i porównaj stan.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-DEEP-LINK",
+      "group": "navigation",
+      "name": "Nie działa wejście bezpośrednie",
+      "possible_causes": [
+        "fallback serwera",
+        "router",
+        "auth redirect"
+      ],
+      "confirmation": "Załaduj trasę w nowym kontekście.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-REDIRECT-LOOP",
+      "group": "navigation",
+      "name": "Pętla przekierowań",
+      "possible_causes": [
+        "sesja",
+        "warunki routera",
+        "konfiguracja"
+      ],
+      "confirmation": "Test kończy się jako niekompletny; nie zgaduj stanu auth bez dowodów.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-SCROLL-RESTORE",
+      "group": "navigation",
+      "name": "Błędne przywrócenie scrolla",
+      "possible_causes": [
+        "history restoration",
+        "lazy list"
+      ],
+      "confirmation": "Porównaj pozycję po powrocie do listy.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-PAGINATION",
+      "group": "navigation",
+      "name": "Błąd paginacji",
+      "possible_causes": [
+        "indeksy",
+        "filtry",
+        "stan routera"
+      ],
+      "confirmation": "Zweryfikuj jawne oczekiwania treści między stronami.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-SEARCH-FILTER",
+      "group": "navigation",
+      "name": "Wyniki niezgodne z filtrem",
+      "possible_causes": [
+        "stan",
+        "debounce",
+        "nieaktualna odpowiedź"
+      ],
+      "confirmation": "Sprawdź kontrakt wyniku dla kontrolnych danych.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-VIRTUAL-LIST",
+      "group": "navigation",
+      "name": "Znikające/duplikowane wiersze",
+      "possible_causes": [
+        "klucze",
+        "recycling",
+        "szacowana wysokość"
+      ],
+      "confirmation": "Przewijaj w obie strony i sprawdzaj kontrolne rekordy.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-LAYOUT-UNSTABLE",
+      "group": "dynamics",
+      "name": "Układ porusza się podczas pomiaru",
+      "possible_causes": [
+        "animacje",
+        "fonty",
+        "późna treść",
+        "zmiana wymiarów"
+      ],
+      "confirmation": "Porównaj geometrię wokół screenshotu; niestabilny wynik pozostaje kandydatem.",
+      "detection": "TW-LAYOUT-UNSTABLE",
+      "automatic": true,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-PIXEL-DRIFT",
+      "group": "dynamics",
+      "name": "Zmiana obrazu względem poprzedniego skanu",
+      "possible_causes": [
+        "zawartość dynamiczna",
+        "motyw",
+        "regresja",
+        "zegar"
+      ],
+      "confirmation": "Potwierdź intencję zmiany; poprzedni skan nie jest zatwierdzonym baseline.",
+      "detection": "TW-PIXEL-DRIFT",
+      "automatic": true,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-JITTER",
+      "group": "dynamics",
+      "name": "Drżenie elementu",
+      "possible_causes": [
+        "pętla resize/layout",
+        "animacje",
+        "zaokrąglenia"
+      ],
+      "confirmation": "Porównaj wiele kolejnych klatek; wyklucz oczekiwaną animację.",
+      "detection": "vision",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-LOADING-STUCK",
+      "group": "dynamics",
+      "name": "Nieskończony stan ładowania",
+      "possible_causes": [
+        "niezamknięty stan",
+        "timeout",
+        "oczekiwanie na dane"
+      ],
+      "confirmation": "Dodaj czasowy kontrakt zniknięcia loadera.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-FLICKER",
+      "group": "dynamics",
+      "name": "Migotanie/FOUT/FOUC",
+      "possible_causes": [
+        "fonty",
+        "CSS loading",
+        "hydration"
+      ],
+      "confirmation": "Analizuj sekwencję klatek; pojedynczy screenshot nie wystarcza.",
+      "detection": "vision",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-RACE",
+      "group": "dynamics",
+      "name": "Wyświetlenie nieaktualnego stanu",
+      "possible_causes": [
+        "kolejność zdarzeń",
+        "anulowanie",
+        "render state"
+      ],
+      "confirmation": "Wykonaj sekwencję szybko zmieniających się dozwolonych działań.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-REDUCED-MOTION",
+      "group": "dynamics",
+      "name": "Ignorowanie ograniczenia ruchu",
+      "possible_causes": [
+        "brak media query",
+        "animacja JS"
+      ],
+      "confirmation": "Sprawdź oddzielny profil reduced motion bez sztucznego zamrażania animacji.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-FLASH-SAFETY",
+      "group": "dynamics",
+      "name": "Ryzykowne błyski",
+      "possible_causes": [
+        "częstotliwość",
+        "kontrast",
+        "animacja"
+      ],
+      "confirmation": "Wymaga analizy sekwencji i specjalistycznej oceny; nie orzeka z pojedynczej klatki.",
+      "detection": "manual",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-THEME",
+      "group": "consistency",
+      "name": "Błędy jasnego/ciemnego motywu",
+      "possible_causes": [
+        "tokeny",
+        "hardcoded color",
+        "obrazy bez wariantu"
+      ],
+      "confirmation": "Porównaj te same stany w obu motywach.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-COMPONENT-DRIFT",
+      "group": "consistency",
+      "name": "Rozjazd wspólnego komponentu",
+      "possible_causes": [
+        "duplikacja stylów",
+        "wersje",
+        "tokeny"
+      ],
+      "confirmation": "Porównaj homologiczne komponenty z jawnym kontraktem.",
+      "detection": "vision",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-BROWSER-DIFFERENCE",
+      "group": "consistency",
+      "name": "Różnice między silnikami",
+      "possible_causes": [
+        "CSS support",
+        "user-agent styles",
+        "rendering"
+      ],
+      "confirmation": "Powtórz tę samą wersję aplikacji i stan w całej macierzy.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-PRINT",
+      "group": "consistency",
+      "name": "Ucięty wydruk",
+      "possible_causes": [
+        "print CSS",
+        "pagination",
+        "hidden content"
+      ],
+      "confirmation": "Sprawdź osobny profil mediów print.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-STALE-CACHE",
+      "group": "consistency",
+      "name": "Nieaktualny interfejs",
+      "possible_causes": [
+        "service worker",
+        "cache",
+        "wersje zasobów"
+      ],
+      "confirmation": "Porównaj czysty i jawnie utrwalony kontekst; live skaner blokuje SW.",
+      "detection": "manual",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-SESSION-LEAK",
+      "group": "consistency",
+      "name": "Widoczny stan innego użytkownika",
+      "possible_causes": [
+        "cache",
+        "storage",
+        "sesja",
+        "izolacja"
+      ],
+      "confirmation": "Testuj wyłącznie kontrolne konta; screenshot nie potwierdza pełnego modelu uprawnień.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-CHART-MEANING",
+      "group": "consistency",
+      "name": "Błędna prezentacja wykresu",
+      "possible_causes": [
+        "skala",
+        "jednostki",
+        "etykiety",
+        "dane"
+      ],
+      "confirmation": "Porównaj jawny zestaw referencyjny i kontrakt znaczenia.",
+      "detection": "manual",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-COPY-SEMANTICS",
+      "group": "consistency",
+      "name": "Niezrozumiała/nieprawdziwa etykieta",
+      "possible_causes": [
+        "treść",
+        "tłumaczenie",
+        "brak kontekstu"
+      ],
+      "confirmation": "Potrzebna ocena względem celu produktu, nie sama geometria.",
+      "detection": "manual",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-NATIVE-WINDOW",
+      "group": "native-and-coverage",
+      "name": "Natywne okno poza pulpitem",
+      "possible_causes": [
+        "zapisana geometria",
+        "zmiana monitora",
+        "DPI"
+      ],
+      "confirmation": "Sprawdź na docelowym OS przez adapter desktop/Appium.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-NATIVE-DPI",
+      "group": "native-and-coverage",
+      "name": "Błędy skali natywnego GUI",
+      "possible_causes": [
+        "DPI awareness",
+        "skalowanie aplikacji"
+      ],
+      "confirmation": "Porównaj profile monitora na rzeczywistym systemie.",
+      "detection": "vision",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-TERMINAL-WRAP",
+      "group": "native-and-coverage",
+      "name": "Błędy zawijania terminala",
+      "possible_causes": [
+        "wcwidth",
+        "Unicode",
+        "szerokość PTY"
+      ],
+      "confirmation": "Uruchom scenariusz Pexpect w kilku rozmiarach PTY.",
+      "detection": "contract",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-TERMINAL-COLOR",
+      "group": "native-and-coverage",
+      "name": "Nieczytelne kolory TUI",
+      "possible_causes": [
+        "paleta",
+        "ANSI",
+        "motyw terminala"
+      ],
+      "confirmation": "Porównaj render TUI w kontrolowanych paletach.",
+      "detection": "vision",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-IFRAME-COVERAGE",
+      "group": "native-and-coverage",
+      "name": "Wnętrze iframe nie zostało zbadane",
+      "possible_causes": [
+        "granica kolektora lub originu"
+      ],
+      "confirmation": "Dodaj osobny autoryzowany target albo analizę obrazu; to luka pokrycia.",
+      "detection": "gap",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-SHADOW-CLOSED",
+      "group": "native-and-coverage",
+      "name": "Zamknięty Shadow DOM",
+      "possible_causes": [
+        "brak dostępu przez DOM"
+      ],
+      "confirmation": "Analizuj screenshot i kontrakty wejścia; nie ogłaszaj pełnego pokrycia.",
+      "detection": "gap",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-AUTH-COVERAGE",
+      "group": "native-and-coverage",
+      "name": "Nieosiągnięty stan po zalogowaniu",
+      "possible_causes": [
+        "brak sesji testowej",
+        "przekierowanie"
+      ],
+      "confirmation": "Dodaj jawny, bezpieczny fixture/session setup; brak danych to nie PASS.",
+      "detection": "gap",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-RESOURCE-GAP",
+      "group": "native-and-coverage",
+      "name": "Analiza ograniczona zasobami",
+      "possible_causes": [
+        "CPU/RAM/dysk/budżet LLM"
+      ],
+      "confirmation": "Pokaż zaległość, pominiętą warstwę i ostatni rzeczywisty pomiar.",
+      "detection": "gap",
+      "automatic": false,
+      "root_cause_authority": "hypothesis-only"
+    }
+  ]
+}

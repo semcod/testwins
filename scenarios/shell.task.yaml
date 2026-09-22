@@ -1,0 +1,6 @@
+schema: testwins.task/v1
+id: shell-smoke
+backend: testql
+files: [scenarios/shell.oql]
+timeout_seconds: 45
+step_timeout_ms: 10000

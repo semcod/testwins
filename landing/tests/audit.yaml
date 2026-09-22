@@ -1,0 +1,45 @@
+schema: testwins.config/v1
+project: testwins-landing
+base_url: http://sut:8080
+matrix: cdp
+color_scheme: dark
+routes:
+  - {id: home, path: /}
+  - {id: docs, path: /docs/}
+  - {id: privacy, path: /privacy/}
+capture:
+  repeats: 2
+  scroll_tiles: 6
+  max_cell_seconds: 240
+journeys:
+  - id: theme
+    path: /
+    steps:
+      - id: switch
+        action: click
+        selector: '#theme-toggle'
+        allow_mutation: true
+        expect: {kind: text, selector: '#theme-label', value: 'Tryb ciemny'}
+  - id: platform
+    path: /
+    steps:
+      - id: shell
+        action: click
+        selector: '[data-platform="shell"]'
+        allow_mutation: true
+        expect: {kind: text, selector: '#platform-state', value: 'Scenariusz shell przez TestQL'}
+      - id: gui
+        action: click
+        selector: '[data-platform="gui"]'
+        allow_mutation: true
+        expect: {kind: text, selector: '#install-command', value: 'make desktop-demo'}
+  - id: faq
+    path: /
+    steps:
+      - id: open
+        action: click
+        selector: '#faq-llm summary'
+        allow_mutation: true
+        expect: {kind: visible, selector: '#faq-llm-answer'}
+rules:
+  heuristic_alignment: false

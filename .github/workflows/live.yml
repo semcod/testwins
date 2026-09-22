@@ -1,0 +1,50 @@
+name: testwins-live-opt-in-integration
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live-docker:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Validate merged Compose and build real HTTP monitor
+        run: |
+          docker compose -f compose.live.yaml config --quiet
+          make live-docker
+      - name: Require all nine configured cells to be observed completely
+        run: |
+          python3 - <<'PY'
+          import json,time,urllib.request
+          deadline=time.monotonic()+240
+          while time.monotonic()<deadline:
+              try:
+                  with urllib.request.urlopen('http://127.0.0.1:9067/api/status',timeout=5) as r:
+                      data=json.load(r)
+                  if len(data['targets'])==9 and all(t['status']=='complete' for t in data['targets']):
+                      print(json.dumps(data,indent=2));break
+              except Exception:
+                  pass
+              time.sleep(3)
+          else:
+              raise SystemExit('Live matrix incomplete; not PASS')
+          PY
+      - name: Persist local monitor diagnostics
+        if: always()
+        run: |
+          mkdir -p verification/live-ci
+          docker compose -f compose.live.yaml logs --no-color > verification/live-ci/compose.log
+          curl --fail http://127.0.0.1:9067/api/status > verification/live-ci/status.json || true
+          CID=$(docker compose -f compose.live.yaml ps -q monitor)
+          if [ -n "$CID" ]; then docker cp "$CID:/artifacts/." verification/live-ci/data || true; fi
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: live-http-evidence
+          path: verification/live-ci/
+          retention-days: 7
+      - run: make live-docker-down
+        if: always()

@@ -1,0 +1,68 @@
+# Przykład częściowej migracji; selektory z kodu legacy. Wymaga testu na aplikacji.
+# Wynik ma zawierać taskand; nie wystarczy dowolny niepusty wynik.
+schema: testwins.config/v1
+project: clonerd-ux
+base_url: http://127.0.0.1:8891
+matrix: chromium
+headless: true
+sandbox: true
+locale: pl-PL
+timezone: Europe/Warsaw
+color_scheme: dark
+allowed_origins: []
+capture:
+  repeats: 2
+  scroll_tiles: 4
+  timeout_ms: 10000
+  settle_ms: 250
+  max_cell_seconds: 600
+  ready_selector: '#main'
+  mask_selectors:
+  - input
+  - textarea
+  - '[contenteditable=true]'
+  - '[data-private]'
+axe:
+  enabled: false
+  required: false
+baseline:
+  fail_on_difference: false
+devices:
+  desktop:
+    width: 1440
+    height: 900
+    dpr: 1
+    touch: false
+    mobile: false
+routes: []
+journeys:
+- id: developer-palette
+  path: /?source=demo&mode=user&layout=desktop&view=services&tour=off
+  steps:
+  - id: open
+    action: press
+    selector: body
+    key: Control+k
+    allow_mutation: true
+    expect:
+      kind: visible
+      selector: :nth-match(:is(.palette-overlay, .palette-box, .palette-modal):visible,
+        1)
+  - id: search
+    action: fill
+    selector: :nth-match(:is(#palette-search-input, .palette-search-input, .palette-input):visible,
+      1)
+    value: taskand
+    allow_mutation: true
+    expect:
+      kind: visible
+      selector: :nth-match(.palette-item:visible:has-text("taskand"), 1)
+  - id: close
+    action: press
+    selector: body
+    key: Escape
+    allow_mutation: true
+    expect:
+      kind: count
+      selector: :is(.palette-overlay, .palette-box, .palette-modal):visible
+      value: 0

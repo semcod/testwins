@@ -1,0 +1,60 @@
+# Audyt GUI, nie pełny test person/API. axe wyłączone jawnie.
+schema: testwins.config/v1
+project: clonerd-ux
+base_url: http://127.0.0.1:8891
+matrix: chromium
+headless: true
+sandbox: true
+locale: pl-PL
+timezone: Europe/Warsaw
+color_scheme: dark
+allowed_origins: []
+capture:
+  repeats: 2
+  scroll_tiles: 4
+  timeout_ms: 10000
+  settle_ms: 250
+  max_cell_seconds: 600
+  ready_selector: '#main'
+  mask_selectors:
+  - input
+  - textarea
+  - '[contenteditable=true]'
+  - '[data-private]'
+axe:
+  enabled: false
+  required: false
+baseline:
+  fail_on_difference: false
+devices:
+  desktop:
+    width: 1440
+    height: 900
+    dpr: 1
+    touch: false
+    mobile: false
+  tablet:
+    width: 820
+    height: 1180
+    dpr: 2
+    touch: true
+    mobile: true
+routes:
+- id: customer-overview
+  path: /?source=demo&mode=demo&layout=desktop&view=overview&tour=off
+- id: customer-billing
+  path: /?source=demo&mode=demo&layout=desktop&view=billing&tour=off
+- id: developer-services
+  path: /?source=demo&mode=user&layout=desktop&view=services&tour=off
+- id: manager-matrix
+  path: /?source=demo&mode=user&layout=desktop&surface=manager&view=teams&tab=matrix&tour=off
+- id: manager-audit
+  path: /?source=demo&mode=user&layout=desktop&view=audit&tour=off
+- id: accountant-invoices
+  path: /?source=demo&mode=user&layout=desktop&surface=billing&view=invoices&tour=off
+- id: accountant-address
+  path: /?source=demo&mode=user&layout=desktop&surface=billing&view=billing_address&tour=off
+- id: ceo-overview
+  path: /?source=demo&mode=user&layout=desktop&view=overview&tour=off
+- id: cto-hosts
+  path: /?source=demo&mode=user&layout=desktop&view=hosts&tour=off

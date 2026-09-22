@@ -1,0 +1,154 @@
+/* All inputs are rendered DOM/layout. No application source, network log or private JS state. */
+(opts) => {
+  const started = performance.now();
+  const nodes = [], texts = [], masks = [], gaps = [], links = [];
+  const roots = [document]; const seen = new Set();
+  let truncated = false;
+  const visual=window.visualViewport,ox=visual?.offsetLeft||0,oy=visual?.offsetTop||0;
+  const rect = r => ({x:r.x-ox, y:r.y-oy, width:r.width, height:r.height});
+  const intersect = (a,b) => {const x=Math.max(a.x,b.x),y=Math.max(a.y,b.y);
+    return {x,y,width:Math.max(0,Math.min(a.x+a.width,b.x+b.width)-x),height:Math.max(0,Math.min(a.y+a.height,b.y+b.height)-y)};};
+  const vp = {x:0,y:0,width:opts.capture_viewport?.width||visual?.width||innerWidth,height:opts.capture_viewport?.height||visual?.height||innerHeight};
+  const parent = el => el.parentElement || (el.getRootNode() instanceof ShadowRoot ? el.getRootNode().host : null);
+  const contains = (a,b) => {for(let e=b;e;e=parent(e)) if(e===a) return true; return false;};
+  const pathCache = new WeakMap();
+  const path = el => {
+    if(!el || el.nodeType!==1) return '';
+    if(pathCache.has(el)) return pathCache.get(el);
+    const root=el.getRootNode();
+    const prefix=root instanceof ShadowRoot ? path(root.host)+' >>> ' : '';
+    let p;
+    if(el.id && root.querySelectorAll('#'+CSS.escape(el.id)).length===1) p='#'+CSS.escape(el.id);
+    else if(el.hasAttribute('data-testid')) p='[data-testid='+JSON.stringify(el.getAttribute('data-testid'))+']';
+    else {
+      const parts=[]; let e=el;
+      while(e && parts.length<12){
+        let part=e.localName;
+        if(e.parentElement) part+=':nth-of-type('+(Array.from(e.parentElement.children).filter(x=>x.localName===e.localName).indexOf(e)+1)+')';
+        parts.unshift(part); if(e===root.documentElement) break; e=e.parentElement;
+      } p=parts.join(' > ');
+    }
+    p=prefix+p;pathCache.set(el,p);return p;
+  };
+  const isPrivate=el=>{for(let e=el;e;e=parent(e)){
+    if(opts.mask_selectors.some(s=>e.matches(s))) return true;
+  }return false;};
+  const hit=(x,y)=>{let e=document.elementFromPoint(x+ox,y+oy),old=null;
+    while(e && e!==old && e.shadowRoot){old=e;e=e.shadowRoot.elementFromPoint(x+ox,y+oy)||e;}return e;};
+  for(let ri=0;ri<roots.length;ri++) {
+    const root=roots[ri];
+    for(const el of root.querySelectorAll('*')) {
+      if(seen.has(el))continue;seen.add(el);
+      if(seen.size>opts.max_elements*4){truncated=true;break;}
+      if(el.shadowRoot) roots.push(el.shadowRoot);
+      if(nodes.length>=opts.max_elements){truncated=true;break;}
+      const cs=getComputedStyle(el), r=rect(el.getBoundingClientRect());
+      if(cs.display==='none'||cs.visibility!=='visible'||+cs.opacity===0||r.width<=0||r.height<=0)continue;
+      let hidden=false, clip={...vp}, intentional=false;
+      const ancestors=[];
+      for(let p=parent(el);p;p=parent(p)){
+        const pc=getComputedStyle(p);ancestors.push(path(p));
+        if(+pc.opacity===0||pc.visibility!=='visible'||pc.contentVisibility==='hidden'){hidden=true;break;}
+        // Closed <details> can expose descendant Range rects that are not painted.
+        // Only its first summary subtree remains rendered; never diagnose hidden answers.
+        if(p.localName==='details'&&!p.open){
+          const summary=Array.from(p.children).find(c=>c.localName==='summary');
+          if(!summary||!contains(summary,el)){hidden=true;break;}
+        }
+        const pr=rect(p.getBoundingClientRect());
+        const c={x:pr.x+p.clientLeft,y:pr.y+p.clientTop,width:p.clientWidth,height:p.clientHeight};
+        if(['hidden','clip','scroll','auto'].includes(pc.overflowX)){
+          const next=intersect(clip,{x:c.x,y:clip.y,width:c.width,height:clip.height});clip.x=next.x;clip.width=next.width;
+        }
+        if(['hidden','clip','scroll','auto'].includes(pc.overflowY)){
+          const next=intersect(clip,{x:clip.x,y:c.y,width:clip.width,height:c.height});clip.y=next.y;clip.height=next.height;
+        }
+        if(pc.textOverflow==='ellipsis'||parseInt(pc.webkitLineClamp)>0)intentional=true;
+      }
+      if(hidden)continue;
+      const privateNode=isPrivate(el), visibleRect=intersect(r,clip), selector=path(el);
+      const interactive=el.matches('button,a[href],input:not([type=hidden]),select,textarea,[role=button],[role=link],[tabindex]');
+      const n={selector,parent:path(parent(el)),ancestors,tag:el.localName,rect:r,visibleRect,
+        display:cs.display,position:cs.position,transform:cs.transform,overflowX:cs.overflowX,overflowY:cs.overflowY,
+        clientWidth:el.clientWidth,clientHeight:el.clientHeight,scrollWidth:el.scrollWidth,scrollHeight:el.scrollHeight,
+        textOverflow:cs.textOverflow,lineClamp:cs.webkitLineClamp,interactive,
+        private:privateNode,disabled:!!el.disabled,inert:el.closest('[inert]')!==null,
+        fontSize:parseFloat(cs.fontSize),alignItems:cs.alignItems,flexDirection:cs.flexDirection,
+        role:el.getAttribute('role'),name:privateNode?'[REDACTED]':(el.getAttribute('aria-label')||el.getAttribute('alt')||'').slice(0,160),
+        brokenImage:el instanceof HTMLImageElement && !!el.currentSrc && el.complete && el.naturalWidth===0,
+        occluded:0,hitSamples:0,covering:[],
+        focused:el===document.activeElement || el===el.getRootNode().activeElement,
+        ariaHiddenAncestor:!!el.closest('[aria-hidden="true"]'),
+        css:Object.fromEntries(['minWidth','maxWidth','minHeight','maxHeight','boxSizing','whiteSpace','overflowWrap',
+        'wordBreak','lineHeight','fontFamily','zIndex','opacity','transform','pointerEvents','isolation',
+        'flexShrink','flexGrow','gap','marginTop','marginRight','marginBottom','marginLeft',
+        'paddingTop','paddingRight','paddingBottom','paddingLeft','color','backgroundColor'].map(k=>[k,cs[k]]))};
+      if(privateNode && visibleRect.width && visibleRect.height) masks.push(visibleRect);
+      if(interactive && !n.disabled && !n.inert && cs.pointerEvents!=='none' && visibleRect.width>2 && visibleRect.height>2){
+        for(const [fx,fy] of [[.5,.5],[.2,.2],[.8,.2],[.2,.8],[.8,.8]]){
+          const x=visibleRect.x+visibleRect.width*fx,y=visibleRect.y+visibleRect.height*fy;
+          const top=hit(x,y);n.hitSamples++;
+          if(top && !contains(el,top) && !contains(top,el)){n.occluded++;n.covering.push(path(top));}
+        }
+        n.covering=Array.from(new Set(n.covering));
+      }
+      if(el.localName==='a'&&el.href&&visibleRect.width>0&&visibleRect.height>0) links.push(el.href);
+      if(el.localName==='iframe'&&visibleRect.width>0&&visibleRect.height>0)
+        gaps.push({kind:'iframe',selector,reason:'Frame interior is not inspected by the DOM collector; screenshot only.'});
+      if(el.localName==='canvas'&&visibleRect.width>0&&visibleRect.height>0)
+        gaps.push({kind:'canvas',selector,reason:'Canvas contents require screenshot interpretation or explicit UI assertions.'});
+      nodes.push(n);
+      if(privateNode)continue;
+      // Direct text nodes only: parent/child DOM rectangles are not mistaken for text collisions.
+      for(const child of el.childNodes){
+        if(child.nodeType!==Node.TEXT_NODE||!child.textContent.trim())continue;
+        const range=document.createRange();range.selectNodeContents(child);
+        let ownClip={...clip};
+        const border={x:r.x+el.clientLeft,y:r.y+el.clientTop,width:el.clientWidth,height:el.clientHeight};
+        const clipX=['hidden','clip'].includes(cs.overflowX),clipY=['hidden','clip'].includes(cs.overflowY);
+        if(clipX){const v=intersect(ownClip,{x:border.x,y:ownClip.y,width:border.width,height:ownClip.height});ownClip.x=v.x;ownClip.width=v.width;}
+        if(clipY){const v=intersect(ownClip,{x:ownClip.x,y:border.y,width:ownClip.width,height:border.height});ownClip.y=v.y;ownClip.height=v.height;}
+        for(const tr of range.getClientRects()){
+          if(texts.length>=opts.max_text_rects){truncated=true;break;}
+          const rr=rect(tr),vr=intersect(rr,ownClip);
+          if(rr.width<1||rr.height<1||vr.width<1||vr.height<1)continue;
+          let ancestorClipX=false,ancestorClipY=false;
+          for(let p=parent(el);p;p=parent(p)){const pc=getComputedStyle(p),pr=rect(p.getBoundingClientRect());
+            const cx=pr.x+p.clientLeft,cy=pr.y+p.clientTop;
+            if(['hidden','clip'].includes(pc.overflowX)&&(rr.x<cx-2||rr.x+rr.width>cx+p.clientWidth+2))ancestorClipX=true;
+            if(['hidden','clip'].includes(pc.overflowY)&&(rr.y<cy-2||rr.y+rr.height>cy+p.clientHeight+2))ancestorClipY=true;
+          }
+          texts.push({selector,ancestors,rect:rr,visibleRect:vr,text:child.textContent.trim().slice(0,160),
+            intentional: intentional||cs.textOverflow==='ellipsis'||parseInt(cs.webkitLineClamp)>0,
+            // Clip by viewport is navigation, not a defect. Only local CSS clipping is evaluated below.
+            localClipX:ancestorClipX || (clipX && (rr.x<border.x-1||rr.x+rr.width>border.x+border.width+1)),
+            localClipY:ancestorClipY || (clipY && (rr.y<border.y-1||rr.y+rr.height>border.y+border.height+1)),
+            transformed:cs.transform!=='none',fontSize:parseFloat(cs.fontSize)});
+        }
+      }
+    }
+  }
+  const alignments=opts.alignment.map(a=>({id:a.id,edge:a.edge,tolerance:a.tolerance_px,
+    nodes:Array.from(document.querySelectorAll(a.selector)).map(el=>({selector:path(el),rect:rect(el.getBoundingClientRect())})).filter(n=>n.rect.width&&n.rect.height)}));
+  const clone=document.documentElement.cloneNode(true);
+  // A non-executable semantic serialization, not original HTML/JS source.
+  for(const el of clone.querySelectorAll('script,style,link,iframe,object,embed,base,meta,template')) el.remove();
+  for(const el of [clone,...clone.querySelectorAll('*')]){
+    if(opts.mask_selectors.some(s=>el.matches(s))) {el.textContent='[REDACTED]';el.removeAttribute('value');}
+    for(const attr of Array.from(el.attributes)){
+      const k=attr.name;
+      if(!['id','class','role','type','alt','title','data-testid'].includes(k) && !k.startsWith('aria-')) el.removeAttribute(k);
+      else if(/token|secret|password|bearer/i.test(attr.value)&&k!=='type')el.setAttribute(k,'[REDACTED]');
+    }
+  }
+  let html='<!doctype html>\n'+clone.outerHTML;
+  if(new TextEncoder().encode(html).length>opts.max_html_bytes){html=new TextDecoder().decode(new TextEncoder().encode(html).slice(0,opts.max_html_bytes));truncated=true;}
+  return {schema:'testwins.snapshot/v1',viewport:{width:vp.width,height:vp.height},
+    visualViewport:{width:visual?.width||innerWidth,height:visual?.height||innerHeight,offsetX:ox,offsetY:oy,scale:visual?.scale||1},
+    layoutViewport:{width:innerWidth,height:innerHeight,rootWidth:document.documentElement.clientWidth,rootHeight:document.documentElement.clientHeight},
+    screen:{width:screen.width,height:screen.height},dpr:devicePixelRatio,
+    scroll:{x:scrollX+ox,y:scrollY+oy,layoutX:scrollX,layoutY:scrollY},document:{width:document.documentElement.scrollWidth,height:document.documentElement.scrollHeight},
+    hasViewportMeta:!!document.querySelector('meta[name=viewport]'),fontsStatus:document.fonts.status,
+    title:document.title.slice(0,200),nodes,texts,masks,alignments,links:Array.from(new Set(links)).slice(0,200),
+    gaps,truncated,html,elapsedMs:Math.round(performance.now()-started)};
+}

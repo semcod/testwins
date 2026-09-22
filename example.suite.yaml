@@ -1,0 +1,11 @@
+schema: testwins.suite/v1
+id: local-cli-and-terminal
+steps:
+  - id: cli
+    kind: task
+    config: scenarios/shell.task.yaml
+    project: .
+  - id: terminal
+    kind: task
+    config: scenarios/terminal.task.yaml
+    project: .

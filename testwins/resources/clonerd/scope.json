@@ -1,0 +1,25 @@
+{
+  "schema": "testwins.migration-scope/v1",
+  "application": "Clonerd",
+  "real_application_verified": false,
+  "source": "User-supplied tests.zip and twin_ux.zip; no access to application sources or runtime",
+  "delivered": [
+    "9 entry points / 3 profiles",
+    "6 declarative persona journeys / 3 profiles",
+    "separate readonly API menu contract",
+    "review-only invoice download and POST scenario",
+    "strict required-check gate",
+    "optional CDP heap budget"
+  ],
+  "not_asserted": [
+    "production payments and backend persistence",
+    "RBAC security enforcement",
+    "semantic correctness of invoice PDF",
+    "native noVNC connection establishment",
+    "KSeF integration",
+    "actual chart data freshness",
+    "focus return target until known",
+    "auth state validity for a real account"
+  ],
+  "cutover": "Do not remove legacy contracts outside delivered scope until replacement contracts are reviewed and run against the actual service."
+}

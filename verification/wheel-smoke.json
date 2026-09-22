@@ -1,0 +1,23 @@
+{
+  "wheel_installed": true,
+  "dependency_installation": "--no-deps in a new venv, explicitly reusing preinstalled dependencies via a local .pth; not a clean dependency/network install",
+  "outside_source_import": true,
+  "minimal_profile_created": true,
+  "clonerd_profile_created": true,
+  "clonerd_parsers_validated": true,
+  "actual_application_executed": false,
+  "terminal_result": {
+    "backend": "terminal",
+    "executed": 4,
+    "exit_code_asserted": true,
+    "exit_code_matched": true,
+    "exit_status": 0,
+    "observed_bytes": 34,
+    "project_key": "998d58a64ded4dae68343af7c752fef0caab398a33f76f416bfdbd1e0a539d8f",
+    "schema": "testwins.task-result/v1",
+    "status": "passed",
+    "steps": 4,
+    "task_id": "terminal-smoke",
+    "timestamp": "2026-09-22T14:36:47.732Z"
+  }
+}

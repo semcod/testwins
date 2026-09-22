@@ -1,0 +1,128 @@
+name: testwins-verification
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      docker_matrix:
+        description: Build and run both complete 9-cell Docker matrices
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  unit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: make install
+      - run: make install-testql-source TESTQL_REF=main
+      - run: python -m pytest -q -m 'not browser' --junitxml=verification/ci-unit-tests.xml
+      - name: Real installed TestQL public SDK, not a mocked contract
+        run: python tools/verify_testql.py
+      - name: Build distribution and check metadata
+        run: python -m build && python -m twine check dist/*.whl dist/*.tar.gz
+      - run: python -m compileall -q testwins tools && node --check testwins/collector.js && sh -n docker/entrypoint.sh
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: unit-evidence
+          path: |
+            verification/ci-unit-tests.xml
+            verification/testql-runs/
+            dist/
+          retention-days: 14
+  browser:
+    needs: unit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: make install
+      - run: python -m playwright install --with-deps chromium
+      - name: Full browser regressions including localStorage and download
+        run: |
+          export CHROMIUM_EXECUTABLE=$(python -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); print(p.chromium.executable_path); p.stop()')
+          python -m pytest -q -m browser --junitxml=verification/ci-browser-tests.xml
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: browser-evidence
+          path: verification/ci-browser-tests.xml
+          retention-days: 14
+  docker:
+    if: github.event_name == 'workflow_dispatch' && inputs.docker_matrix
+    needs: unit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        transport: [cdp, engines]
+    env:
+      MATRIX: ${{ matrix.transport }}
+      LAB_MEMORY: 5g
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Seeded demo, real HTTP and required axe
+        run: make demo
+      - name: Assert real matrix coverage and functional controls
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('artifacts/lab')
+          pointer=json.loads((root/'latest.json').read_text())
+          report=json.loads((root/pointer['directory']/'report.json').read_text())
+          assert report['coverage']['expected_cells']==9, report['coverage']
+          assert report['coverage']['state']=='complete', report['coverage']
+          assert report['summary']['confirmed']>0
+          dialog=[c for c in report['checks'] if c['scene']=='dialog']
+          cart=[c for c in report['checks'] if c['scene']=='cart']
+          assert len(dialog)==18 and all(c['status']=='passed' for c in dialog)
+          assert len(cart)==18 and all(c['status']=='failed' for c in cart)
+          assert report['environment']['fixture_mode']=='none'
+          PY
+      - name: Stop the seeded application before using the same ports
+        run: make down
+      - name: Landing Docker + Testwins matrix + actual TestQL browser scenario
+        run: make landing-check
+      - name: Require complete nine-cell landing coverage and an executed TestQL result
+        run: |
+          python3 - <<'PYCODE'
+          import json
+          from pathlib import Path
+          root=Path('artifacts/landing')
+          pointer=json.loads((root/'latest.json').read_text())
+          report=json.loads((root/pointer['directory']/'report.json').read_text())
+          assert report['coverage']['expected_cells']==9
+          assert report['coverage']['state']=='complete'
+          assert all(c['status']=='passed' for c in report['checks'])
+          assert report['environment']['fixture_mode']=='none'
+          runs=list((root/'testql').glob('*/result.json'))
+          assert runs, 'No TestQL result'
+          result=json.loads(sorted(runs)[-1].read_text())
+          assert result['backend']=='testql' and result['status']=='passed'
+          PYCODE
+      - run: make logs INSTANCE=landing
+        if: always()
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: docker-${{ matrix.transport }}-evidence
+          path: artifacts/
+          retention-days: 14
+      - run: make landing-down; make down
+        if: always()

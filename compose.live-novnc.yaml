@@ -1,0 +1,22 @@
+# Use together with compose.live.yaml. The Make target generates a fresh local VNC secret.
+services:
+  monitor:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: engines
+    entrypoint: ["/bin/sh", "/work/live-novnc-entrypoint.sh"]
+    environment:
+      DISPLAY: ":99"
+      HOME: /tmp/testwins-home
+    ports:
+      - "127.0.0.1:6080:6080"
+      - "127.0.0.1:8088:8088"
+    volumes:
+      - ./configs/live/novnc.watch.yaml:/work/landing.watch.yaml:ro
+      - ./configs/live/headed.audit.yaml:/work/headed.audit.yaml:ro
+      - ./docker/live-novnc-entrypoint.sh:/work/live-novnc-entrypoint.sh:ro
+    secrets: [vnc_password]
+secrets:
+  vnc_password:
+    file: .testwins-live-secret/vnc_password

@@ -1,0 +1,53 @@
+schema: testwins.watch/v1
+project: testwins-landing
+output: .testwins/live
+resources:
+  max_workers: 2
+  per_origin: 1
+  max_hot_pages: 1
+  max_tier: 2
+  cpu_limit: 80
+  reserve_mb: 512
+  worker_mb: 384
+  evidence_limit_mb: 4096
+alerts:
+  confirmation_scans: 2
+  recovery_scans: 2
+  repeat_gap_s: 0.15
+watch:
+  paths: []
+  debounce_s: 1
+  max_debounce_s: 5
+sites:
+- id: landing
+  base_url: http://landing:8080
+  browsers:
+  - chromium
+  devices:
+  - desktop
+  - tablet
+  - mobile
+  interval_s: 45
+  source_globs: []
+  pages:
+  - id: home
+    path: /
+    hot: true
+    priority: 1
+    expect:
+    - kind: visible
+      selector: h1
+  - id: docs
+    path: /docs/
+    priority: 2
+  - id: privacy
+    path: /privacy/
+    priority: 3
+llm:
+  enabled: false
+  env_file: .env
+  calls_per_hour: 4
+  cooldown_s: 900
+cv:
+  enabled: false
+  backend: opencv

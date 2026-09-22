@@ -1,0 +1,11 @@
+schema: testwins.task/v1
+id: desktop-smoke
+backend: desktop
+command: xmessage
+args: ["-center", "Testwins: disposable desktop"]
+timeout_seconds: 30
+steps:
+  - {action: wait, seconds: 0.5}
+  - {action: capture}
+  - {action: press, key: enter}
+  - {action: capture}

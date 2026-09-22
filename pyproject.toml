@@ -1,0 +1,69 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "testwins"
+version = "0.4.0"
+description = "Evidence-first testing for web, shell and desktop with TestQL, CDP, LiteLLM and computer vision"
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+license = "Apache-2.0"
+license-files = ["LICENSE", "THIRD_PARTY.md"]
+authors = [{name = "Testwins contributors"}, {name = "Tom Sapletta",email = "tom@sapletta.com"}]
+keywords = ["testing", "testql", "cdp", "visual-testing", "litellm", "gui"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python :: 3",
+  "Topic :: Software Development :: Testing",
+]
+dependencies = [
+  "playwright>=1.57,<2", "PyYAML>=6.0.3,<7", "Pillow>=11.3,<13",
+  "jsonschema>=4.23,<5"
+]
+
+[project.optional-dependencies]
+testql = ["testql>=1.2.66,<2"]
+live = ["psutil>=5.9,<8"]
+llm = ["litellm>=1.74,<2"]
+cv = ["opencv-python-headless>=4.10,<5", "numpy>=1.26,<3"]
+yolo = ["ultralytics>=8.3,<9"]
+desktop = ["mss>=9,<11", "pyautogui>=0.9.54,<1"]
+terminal = ["pexpect>=4.9,<5; platform_system != 'Windows'"]
+dev = ["pytest>=8,<10", "build>=1.2,<2", "twine>=6,<7",
+    "goal>=2.1.0; python_version >= '3.12'",
+    "costs>=0.1.53; python_version >= '3.9'",
+]
+
+[project.urls]
+Homepage = "https://testwins.com"
+
+[project.scripts]
+testwins = "testwins.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["testwins*"]
+
+[tool.setuptools.package-data]
+testwins = ["*.js", "*.json", "resources/**/*", "live/*.html", "live/*.js", "live/*.json"]
+
+[tool.setuptools.exclude-package-data]
+"*" = ["*.pyc", "*.pyo", "**/__pycache__/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-m 'not browser'"
+markers = ["browser: real browser integration (opt-in)", "integration: installed optional integration"]
+
+[tool.costs]
+# AI Cost tracking configuration
+badge = true
+update_readme = true
+readme_path = "README.md"
+default_model = "openrouter/qwen/qwen3-coder-next"
+analysis_mode = "byok"
+full_history = true
+max_commits = 500
+
+# Cost thresholds for badge colors (USD)
+badge_color_thresholds = { low = 1.0, medium = 5.0, high = 10.0, critical = 50.0 }

@@ -1,0 +1,80 @@
+# Obejmuje tylko aktualny viewport; nie wykonuje kliknięć ani testów API.
+schema: testwins.watch/v1
+project: clonerd-ux
+output: .testwins/live
+resources:
+  max_workers: 2
+  per_origin: 1
+  max_hot_pages: 2
+  max_tier: 2
+  reserve_mb: 1024
+  worker_mb: 384
+  evidence_limit_mb: 1024
+  disk_reserve_mb: 512
+alerts:
+  confirmation_scans: 2
+  recovery_scans: 2
+diagnostics:
+  css_provenance: true
+llm:
+  enabled: false
+cv:
+  enabled: false
+sites:
+- id: clonerd-large
+  base_url: http://127.0.0.1:8891
+  audit_config: audit/large.yaml
+  browsers:
+  - chromium
+  devices:
+  - desktop
+  - tablet
+  interval_s: 120
+  pages:
+  - id: customer-overview
+    path: /?source=demo&mode=demo&layout=desktop&view=overview&tour=off
+  - id: customer-billing
+    path: /?source=demo&mode=demo&layout=desktop&view=billing&tour=off
+  - id: developer-services
+    path: /?source=demo&mode=user&layout=desktop&view=services&tour=off
+    hot: true
+    priority: 1
+  - id: manager-matrix
+    path: /?source=demo&mode=user&layout=desktop&surface=manager&view=teams&tab=matrix&tour=off
+  - id: manager-audit
+    path: /?source=demo&mode=user&layout=desktop&view=audit&tour=off
+  - id: accountant-invoices
+    path: /?source=demo&mode=user&layout=desktop&surface=billing&view=invoices&tour=off
+  - id: accountant-address
+    path: /?source=demo&mode=user&layout=desktop&surface=billing&view=billing_address&tour=off
+  - id: ceo-overview
+    path: /?source=demo&mode=user&layout=desktop&view=overview&tour=off
+  - id: cto-hosts
+    path: /?source=demo&mode=user&layout=desktop&view=hosts&tour=off
+- id: clonerd-mobile
+  base_url: http://127.0.0.1:8891
+  audit_config: audit/mobile.yaml
+  browsers:
+  - chromium
+  devices:
+  - mobile
+  interval_s: 120
+  pages:
+  - id: customer-overview
+    path: /?source=demo&mode=demo&layout=onepage&view=overview&tour=off
+  - id: customer-billing
+    path: /?source=demo&mode=demo&layout=onepage&view=billing&tour=off
+  - id: developer-services
+    path: /?source=demo&mode=user&layout=onepage&view=services&tour=off
+  - id: manager-matrix
+    path: /?source=demo&mode=user&layout=onepage&surface=manager&view=teams&tab=matrix&tour=off
+  - id: manager-audit
+    path: /?source=demo&mode=user&layout=onepage&view=audit&tour=off
+  - id: accountant-invoices
+    path: /?source=demo&mode=user&layout=onepage&surface=billing&view=invoices&tour=off
+  - id: accountant-address
+    path: /?source=demo&mode=user&layout=onepage&surface=billing&view=billing_address&tour=off
+  - id: ceo-overview
+    path: /?source=demo&mode=user&layout=onepage&view=overview&tour=off
+  - id: cto-hosts
+    path: /?source=demo&mode=user&layout=onepage&view=hosts&tour=off

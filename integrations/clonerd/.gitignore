@@ -1,0 +1,6 @@
+artifacts/
+.testwins/
+.auth/
+.env
+__pycache__/
+*.storage-state.json

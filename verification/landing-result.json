@@ -1,0 +1,49 @@
+{
+  "schema": "testwins.local-verification/v1",
+  "directory": "verification/landing-runs/2026-09-22T141631-602Z-4b8f04bb",
+  "fixture_mode": "offline-rendered-landing-no-http-navigation",
+  "coverage": {
+    "expected_cells": 3,
+    "incomplete_cells": 0,
+    "observed_cells": 3,
+    "scope": "configured scenes and bounded rendered observations only",
+    "state": "complete",
+    "unit": "browser-device"
+  },
+  "summary": {
+    "candidate": 0,
+    "confirmed": 0,
+    "suppressed": 0
+  },
+  "checks": 24,
+  "checks_passed": 24,
+  "snapshots": 98,
+  "environment": {
+    "fixture_mode": "offline-rendered-landing-no-http-navigation",
+    "headless": true,
+    "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+    "playwright": "1.57.0",
+    "sandbox_enabled": false
+  },
+  "integrity": {
+    "valid": true,
+    "events": 100,
+    "head": "5de3a2e6aa5da09c2de81e7b1bd551ca09c34978c0245298376ee1bc80525fe0",
+    "scope": "local restricted-profile and evidence validation",
+    "files": 596,
+    "manifest": "verified",
+    "authenticity": "not signed; hashes detect modification, not a malicious full rewrite"
+  },
+  "browser_versions": [
+    "144.0.7559.96"
+  ],
+  "not_verified": [
+    "HTTP navigation",
+    "Docker/noVNC",
+    "full nine-cell matrices",
+    "TestQL SDK",
+    "axe-core",
+    "remote vision models",
+    "actual YOLO weights"
+  ]
+}

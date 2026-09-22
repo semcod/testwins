@@ -1,0 +1,34 @@
+schema: testwins.config/v1
+project: demo-shop
+base_url: http://sut:8080
+matrix: cdp
+routes:
+  - id: home
+    path: /
+journeys:
+  - id: cart
+    path: /
+    steps:
+      - id: add
+        action: click
+        selector: '#add-to-cart'
+        allow_mutation: true
+        expect: {kind: text, selector: '#cart-count', value: '1'}
+  - id: dialog
+    path: /
+    steps:
+      - id: open
+        action: click
+        selector: '#open-dialog'
+        allow_mutation: true
+        expect: {kind: visible, selector: '#info'}
+capture:
+  repeats: 2
+  scroll_tiles: 3
+  max_cell_seconds: 240
+rules:
+  alignment:
+    - id: product-list-left
+      selector: .align-item
+      edge: left
+      tolerance_px: 2

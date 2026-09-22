@@ -1,0 +1,25 @@
+include README.md START.md LICENSE THIRD_PARTY.md Makefile requirements.txt .env.example
+include CHANGELOG.md .dockerignore .gitignore example.suite.yaml compose.live.yaml compose.live-novnc.yaml
+recursive-include testwins *.py *.js *.json *.yaml *.oql *.md *.html Makefile .gitignore
+recursive-include tools *.py
+recursive-include docker *
+recursive-include docs *.md
+recursive-include configs *.yaml
+recursive-include scenarios *.yaml *.oql
+recursive-include examples *.py *.html
+recursive-include landing *.html *.css *.js *.svg *.yaml *.oql *.conf *.md Dockerfile .dockerignore
+recursive-include tests *.py
+recursive-include .github *.yml *.yaml
+recursive-include integrations *.py *.md *.patch *.yaml *.json *.oql Makefile .gitignore
+recursive-include scripts *.py
+prune artifacts
+prune .testwins
+prune verification
+include verification/STATUS.md
+include verification/environment.json
+include verification/summary.json
+include verification/landing-result.json
+prune .venv
+prune build
+prune dist
+global-exclude __pycache__ *.py[cod] .env *.storage-state.json

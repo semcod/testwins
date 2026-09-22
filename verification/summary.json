@@ -1,0 +1,123 @@
+{
+  "schema": "testwins.release-verification/v1",
+  "version": "0.4.0",
+  "date": "2026-09-22",
+  "unit_and_local": {
+    "passed": 254,
+    "deselected_browser": 8,
+    "warnings": 3,
+    "junit": "unit-tests.xml"
+  },
+  "renderer_subset": {
+    "passed": 6,
+    "excluded_integration_tests": 2,
+    "junit": "renderer-tests.xml",
+    "scope": "owned inline HTML and real Chromium/CDP; no HTTP application navigation"
+  },
+  "attempted_full_features": {
+    "passed_during_attempt": 3,
+    "failed": 2,
+    "junit": "integration-attempt.xml",
+    "excluded_from_success_total": true,
+    "failures": [
+      {
+        "test": "test_real_storage_state_roundtrip_without_recording_tokens",
+        "observation": "ERR_BLOCKED_BY_ADMINISTRATOR during localStorage restoration",
+        "result": "not_verified"
+      },
+      {
+        "test": "test_real_download_event_and_content_validation",
+        "observation": "timeout waiting for actual browser download in managed browser with DownloadRestrictions=1",
+        "result": "not_verified",
+        "caveat": "Timeout alone does not establish a unique cause; rerun on normal authorized target environment."
+      }
+    ]
+  },
+  "landing": {
+    "schema": "testwins.local-verification/v1",
+    "directory": "verification/landing-runs/2026-09-22T141631-602Z-4b8f04bb",
+    "fixture_mode": "offline-rendered-landing-no-http-navigation",
+    "coverage": {
+      "expected_cells": 3,
+      "incomplete_cells": 0,
+      "observed_cells": 3,
+      "scope": "configured scenes and bounded rendered observations only",
+      "state": "complete",
+      "unit": "browser-device"
+    },
+    "summary": {
+      "candidate": 0,
+      "confirmed": 0,
+      "suppressed": 0
+    },
+    "checks": 24,
+    "checks_passed": 24,
+    "snapshots": 98,
+    "environment": {
+      "fixture_mode": "offline-rendered-landing-no-http-navigation",
+      "headless": true,
+      "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+      "playwright": "1.57.0",
+      "sandbox_enabled": false
+    },
+    "integrity": {
+      "valid": true,
+      "events": 100,
+      "head": "5de3a2e6aa5da09c2de81e7b1bd551ca09c34978c0245298376ee1bc80525fe0",
+      "scope": "local restricted-profile and evidence validation",
+      "files": 596,
+      "manifest": "verified",
+      "authenticity": "not signed; hashes detect modification, not a malicious full rewrite"
+    },
+    "browser_versions": [
+      "144.0.7559.96"
+    ],
+    "not_verified": [
+      "HTTP navigation",
+      "Docker/noVNC",
+      "full nine-cell matrices",
+      "TestQL SDK",
+      "axe-core",
+      "remote vision models",
+      "actual YOLO weights"
+    ]
+  },
+  "installed_wheel": {
+    "wheel_installed": true,
+    "dependency_installation": "--no-deps in a new venv, explicitly reusing preinstalled dependencies via a local .pth; not a clean dependency/network install",
+    "outside_source_import": true,
+    "minimal_profile_created": true,
+    "clonerd_profile_created": true,
+    "clonerd_parsers_validated": true,
+    "actual_application_executed": false,
+    "terminal_result": {
+      "backend": "terminal",
+      "executed": 4,
+      "exit_code_asserted": true,
+      "exit_code_matched": true,
+      "exit_status": 0,
+      "observed_bytes": 34,
+      "project_key": "998d58a64ded4dae68343af7c752fef0caab398a33f76f416bfdbd1e0a539d8f",
+      "schema": "testwins.task-result/v1",
+      "status": "passed",
+      "steps": 4,
+      "task_id": "terminal-smoke",
+      "timestamp": "2026-09-22T14:36:47.732Z"
+    }
+  },
+  "not_executed": [
+    "complete Docker/noVNC stack",
+    "nine-cell browser-brand or engine matrices",
+    "actual Clonerd application/persona execution",
+    "actual TestQL SDK",
+    "actual Planfile SDK publication",
+    "full upstream WUP checkout",
+    "remote/local LiteLLM inference",
+    "YOLO weights inference",
+    "native desktop MSS capture",
+    "CI workflows on GitHub",
+    "clean network dependency installation",
+    "PyPI publication or domain deployment"
+  ],
+  "claim": "Consolidated distributable alpha, not a certification of production or all applications."
+}

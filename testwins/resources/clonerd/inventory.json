@@ -1,0 +1,91 @@
+{
+  "scope": "9 observed navigation entry points. Not a replacement for 6 full persona journeys.",
+  "legacy_personas": 6,
+  "legacy_profiles": 3,
+  "legacy_scenario_cells": 18,
+  "new_readonly_entry_states": 9,
+  "new_readonly_chromium_state_device_targets": 27,
+  "layouts": {
+    "desktop": "desktop",
+    "tablet": "desktop",
+    "mobile": "onepage"
+  },
+  "entries": [
+    {
+      "id": "customer-overview",
+      "persona": "customer",
+      "query": {
+        "mode": "demo",
+        "view": "overview"
+      }
+    },
+    {
+      "id": "customer-billing",
+      "persona": "customer",
+      "query": {
+        "mode": "demo",
+        "view": "billing"
+      }
+    },
+    {
+      "id": "developer-services",
+      "persona": "developer",
+      "query": {
+        "mode": "user",
+        "view": "services"
+      }
+    },
+    {
+      "id": "manager-matrix",
+      "persona": "manager",
+      "query": {
+        "mode": "user",
+        "surface": "manager",
+        "view": "teams",
+        "tab": "matrix"
+      }
+    },
+    {
+      "id": "manager-audit",
+      "persona": "manager",
+      "query": {
+        "mode": "user",
+        "view": "audit"
+      }
+    },
+    {
+      "id": "accountant-invoices",
+      "persona": "accountant",
+      "query": {
+        "mode": "user",
+        "surface": "billing",
+        "view": "invoices"
+      }
+    },
+    {
+      "id": "accountant-address",
+      "persona": "accountant",
+      "query": {
+        "mode": "user",
+        "surface": "billing",
+        "view": "billing_address"
+      }
+    },
+    {
+      "id": "ceo-overview",
+      "persona": "ceo",
+      "query": {
+        "mode": "user",
+        "view": "overview"
+      }
+    },
+    {
+      "id": "cto-hosts",
+      "persona": "cto",
+      "query": {
+        "mode": "user",
+        "view": "hosts"
+      }
+    }
+  ]
+}

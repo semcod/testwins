@@ -1,0 +1,13 @@
+........................................................................ [ 28%]
+........................................................................ [ 56%]
+........................................................................ [ 85%]
+......................................                                   [100%]
+=============================== warnings summary ===============================
+tests/test_extensions.py::test_terminal_real_pty
+tests/test_extensions.py::test_terminal_nonzero_exit_fails
+tests/test_extensions.py::test_terminal_output_budget_even_no_match
+  /usr/lib/python3.13/pty.py:95: DeprecationWarning: This process (pid=4050) is multi-threaded, use of forkpty() may lead to deadlocks in the child.
+    pid, fd = os.forkpty()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+254 passed, 8 deselected, 3 warnings in 7.91s

@@ -1,0 +1,55 @@
+schema: testwins.config/v1
+project: clonerd-ux
+base_url: http://127.0.0.1:8891
+matrix: chromium
+headless: true
+sandbox: true
+locale: pl-PL
+timezone: Europe/Warsaw
+color_scheme: dark
+allowed_origins: []
+capture:
+  repeats: 2
+  scroll_tiles: 4
+  timeout_ms: 10000
+  settle_ms: 250
+  max_cell_seconds: 900
+  ready_selector: '#main'
+  mask_selectors:
+  - input
+  - textarea
+  - '[contenteditable=true]'
+  - '[data-private]'
+  before_steps: true
+axe:
+  enabled: false
+  required: false
+baseline:
+  fail_on_difference: false
+devices:
+  desktop:
+    width: 1440
+    height: 900
+    dpr: 1
+    touch: false
+    mobile: false
+routes: []
+journeys:
+- id: invoice-download
+  path: /?source=demo&mode=user&layout=desktop&surface=billing&view=invoices&tour=off
+  steps:
+  - id: download
+    action: download
+    selector: :nth-match(:is(a[download], a:has-text("PDF"), button:has-text("PDF")):visible,
+      1)
+    allow_mutation: true
+    expect:
+      kind: download
+      filename_regex: .*\.pdf
+      min_bytes: 5
+      max_bytes: 10485760
+      starts_with_hex: 255044462d
+downloads:
+  enabled: true
+  max_bytes: 10485760
+  retain: false

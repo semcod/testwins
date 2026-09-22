@@ -1,0 +1,176 @@
+# Executable contracts from the supplied legacy selectors; NOT verified against the real Clonerd service.
+schema: testwins.config/v1
+project: clonerd-ux
+base_url: http://127.0.0.1:8891
+matrix: chromium
+headless: true
+sandbox: true
+locale: pl-PL
+timezone: Europe/Warsaw
+color_scheme: dark
+allowed_origins: []
+capture:
+  repeats: 2
+  scroll_tiles: 4
+  timeout_ms: 10000
+  settle_ms: 250
+  max_cell_seconds: 900
+  ready_selector: '#main'
+  mask_selectors:
+  - input
+  - textarea
+  - '[contenteditable=true]'
+  - '[data-private]'
+  before_steps: true
+axe:
+  enabled: false
+  required: false
+baseline:
+  fail_on_difference: false
+devices:
+  mobile:
+    width: 390
+    height: 844
+    dpr: 3
+    touch: true
+    mobile: true
+routes: []
+journeys:
+- id: customer
+  path: /?source=demo&mode=demo&layout=onepage&view=billing&tour=off
+  steps:
+  - id: plans
+    action: assert
+    expect:
+      kind: count_min
+      selector: .choice-card:visible
+      value: 3
+  - id: select-pro
+    action: check
+    selector: input[name="plan"][value="pro"]
+    allow_mutation: true
+    expect:
+      kind: checked
+      selector: input[name="plan"][value="pro"]
+  - id: provider
+    action: assert
+    expect:
+      kind: visible
+      selector: input[name="provider"][value="przelewy24"]
+  - id: checkout-visible
+    action: assert
+    expect:
+      kind: visible
+      selector: :nth-match(:is(form[data-form="billing-checkout"] button[type="submit"],
+        button[type="submit"]:has-text("Zapłać"), button[type="submit"]:has-text("Przygotuj
+        plan"), button[type="submit"]:has-text("Przejdź do płatności")):visible, 1)
+  - id: checkout-enabled
+    action: assert
+    expect:
+      kind: enabled
+      selector: :nth-match(:is(form[data-form="billing-checkout"] button[type="submit"],
+        button[type="submit"]:has-text("Zapłać"), button[type="submit"]:has-text("Przygotuj
+        plan"), button[type="submit"]:has-text("Przejdź do płatności")):visible, 1)
+- id: developer
+  path: /?source=demo&mode=user&layout=onepage&view=services&tour=off
+  steps:
+  - id: open
+    action: press
+    selector: body
+    allow_mutation: true
+    expect:
+      kind: visible
+      selector: :nth-match(:is(.palette-overlay, .palette-box, .palette-modal):visible,
+        1)
+    key: Control+k
+  - id: search
+    action: fill
+    selector: :nth-match(:is(#palette-search-input, .palette-search-input, .palette-input):visible,
+      1)
+    allow_mutation: true
+    expect:
+      kind: count_min
+      selector: .palette-item:visible:has-text("taskand")
+      value: 1
+    value: taskand
+  - id: close
+    action: press
+    selector: :nth-match(:is(#palette-search-input, .palette-search-input, .palette-input):visible,
+      1)
+    allow_mutation: true
+    expect:
+      kind: count
+      selector: :is(.palette-overlay, .palette-box, .palette-modal):visible
+      value: 0
+    key: Escape
+- id: manager
+  path: /?source=demo&mode=user&layout=onepage&surface=manager&view=teams&tab=matrix&tour=off
+  steps:
+  - id: matrix
+    action: assert
+    expect:
+      kind: visible
+      selector: :nth-match(:is(.matrix-table, .matrix-panel):visible, 1)
+  - id: role-control
+    action: assert
+    expect:
+      kind: visible
+      selector: :nth-match(select[data-action="matrix.role-select"]:visible, 1)
+  - id: audit
+    action: goto
+    value: /?source=demo&mode=user&layout=onepage&view=audit&tour=off
+    allow_mutation: true
+    expect:
+      kind: count_min
+      selector: .data-table tbody tr:visible, .dv-cards .dv-card:visible
+      value: 1
+- id: accountant
+  path: /?source=demo&mode=user&layout=onepage&surface=billing&view=invoices&tour=off
+  steps:
+  - id: invoices
+    action: assert
+    expect:
+      kind: visible
+      selector: ':nth-match(:is(.data-table, .dv-cards, #view-root):visible, 1)'
+  - id: pdf-control
+    action: assert
+    expect:
+      kind: visible
+      selector: :nth-match(:is(a[download], a:has-text("PDF"), button:has-text("PDF")):visible,
+        1)
+  - id: address
+    action: goto
+    value: /?source=demo&mode=user&layout=onepage&surface=billing&view=billing_address&tour=off
+    allow_mutation: true
+    expect:
+      kind: visible
+      selector: ':nth-match(:is(.data-table, .dv-cards, #view-root):visible, 1)'
+- id: ceo
+  path: /?source=demo&mode=user&layout=onepage&view=overview&tour=off
+  steps:
+  - id: kpi
+    action: assert
+    expect:
+      kind: count_min
+      selector: .stat:visible
+      value: 1
+  - id: charts
+    action: assert
+    expect:
+      kind: count_min
+      selector: .stat-spark-wrap svg:visible, svg.sparkline:visible
+      value: 1
+- id: cto
+  path: /?source=demo&mode=user&layout=onepage&view=hosts&tour=off
+  steps:
+  - id: host-view
+    action: assert
+    expect:
+      kind: visible
+      selector: :nth-match(:is(.data-table, .dv-cards):visible, 1)
+  - id: novnc-control
+    action: assert
+    expect:
+      kind: visible
+      selector: :nth-match(:is(button[data-action="twin.open"], button:has-text("noVNC"),
+        button:has-text("Pulpit")):visible, 1)

@@ -1,0 +1,12 @@
+# Executed by TestQL in a separate browser; the CDP matrix runs alongside this scenario.
+GUI_START "http://sut:8080/"
+ASSERT_VISIBLE "h1"
+CLICK "#theme-toggle"
+ASSERT_TEXT "#theme-label" "Tryb ciemny"
+CLICK "[data-platform='shell']"
+ASSERT_TEXT "#platform-state" "Scenariusz shell przez TestQL"
+CLICK "[data-platform='gui']"
+ASSERT_TEXT "#install-command" "make desktop-demo"
+CLICK "#faq-llm summary"
+ASSERT_VISIBLE "#faq-llm-answer"
+GUI_STOP

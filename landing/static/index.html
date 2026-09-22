@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="pl" data-theme="dark">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testwins — testuj to, co widzi użytkownik</title>
+<meta name="description" content="Otwarte laboratorium testów WWW, shell i GUI. TestQL, macierz przeglądarek, dowody wizualne i propozycje ticketów Planfile.">
+<meta name="color-scheme" content="dark light"><meta name="theme-color" content="#101314">
+<link rel="canonical" href="https://testwins.com/"><link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Przejdź do treści</a>
+<header class="header"><div class="container topbar">
+<a class="brand" href="/" aria-label="Testwins — strona główna"><span class="brand-mark" aria-hidden="true">tw</span>testwins<span class="brand-dot">.</span></a>
+<button class="menu-toggle secondary" id="menu-toggle" type="button" aria-controls="main-nav" aria-expanded="false">Menu</button>
+<nav id="main-nav" aria-label="Nawigacja główna"><a href="#capabilities">Możliwości</a><a href="#workflow">Jak to działa</a><a href="/docs/">Dokumentacja</a></nav>
+<button id="theme-toggle" class="theme-toggle" type="button" aria-label="Przełącz motyw"><span aria-hidden="true">◐</span><span id="theme-label">Tryb jasny</span></button>
+</div></header>
+<main id="main">
+<section class="hero container">
+<div class="hero-copy"><p class="eyebrow"><span class="status-dot" aria-hidden="true"></span> OTWARTE LABORATORIUM TESTÓW · 0.4.0 ALPHA</p>
+<h1>Testuj to, co<br>widzi <em>użytkownik.</em></h1>
+<p class="lead">Od terminala do całego portalu. Wykonuj scenariusze, porównuj interfejsy i zamieniaj obserwacje w tickety z dowodami.</p>
+<div class="hero-actions"><a class="primary" href="#start">Uruchom lokalnie <span aria-hidden="true">↗</span></a><a class="text-link" href="/docs/">Poznaj architekturę <span aria-hidden="true">→</span></a></div>
+<p class="fine">TestQL + CDP + LiteLLM. Twoje środowisko, wybrane modele, jawne oczekiwania.</p>
+</div>
+<div class="demo-panel" aria-label="Ilustracja raportu macierzowego — dane demonstracyjne">
+<div class="panel-top"><span class="terminal-dots" aria-hidden="true">● ● ●</span><span>testwins / evidence lab</span><span class="pill">DEMO</span></div>
+<div class="panel-body"><div class="run-heading"><span class="eyebrow">OBSERWUJ. ODTWÓRZ. POTWIERDŹ.</span><span class="run-id">run / 042</span></div>
+<div class="sample-interface"><div class="sample-sidebar" aria-hidden="true"><span class="mini-logo">tw</span><i></i><i></i><i></i></div>
+<div class="sample-content"><span class="sample-title">Panel projektu</span><div class="sample-row"><span>Przegląd</span><span class="sample-tag">Staging</span></div><div class="sample-blocks" aria-hidden="true"><i></i><i></i><i></i></div><div class="finding-box"><span class="finding-label">TW-ALIGNMENT</span><p>Nierówna krawędź elementów</p><span class="finding-meta">Kontrakt: left · tolerancja 2 px</span></div></div></div>
+<div class="matrix" role="table" aria-label="Przykładowa macierz przeglądarek"><div class="matrix-row" role="row"><span role="columnheader">Macierz</span><span role="columnheader">Desktop</span><span role="columnheader">Tablet</span><span role="columnheader">Mobile</span></div><div class="matrix-row" role="row"><strong role="rowheader">Chrome</strong><span role="cell">OK</span><span role="cell">OK</span><span class="matrix-issue" role="cell">1 sygnał</span></div><div class="matrix-row" role="row"><strong role="rowheader">Edge</strong><span role="cell">OK</span><span role="cell">OK</span><span class="matrix-issue" role="cell">1 sygnał</span></div><div class="matrix-row" role="row"><strong role="rowheader">Brave</strong><span role="cell">OK</span><span role="cell">OK</span><span class="matrix-issue" role="cell">1 sygnał</span></div></div>
+<p class="demo-note">Ilustracja, nie wynik testów tej strony. Raporty powstają lokalnie po uruchomieniu audytu.</p></div></div>
+</section>
+<section class="strip"><div class="container strip-inner"><span>JEDEN PRZEPŁYW DOWODOWY</span><span>TestQL</span><span>Playwright / CDP</span><span>LiteLLM</span><span>OpenCV / YOLO</span><span>Planfile</span></div></section>
+<section class="section container" id="capabilities"><div class="section-heading"><p class="eyebrow">01 / ZASIĘG</p><h2>Różne interfejsy.<br>Wspólny język testów.</h2><p>Dobierz wykonawcę do aplikacji. Nie udawaj, że screenshot wyjaśnia wszystko.</p></div>
+<div class="capability-grid"><article class="capability-card"><span class="card-icon" aria-hidden="true">&gt;_</span><h3>Shell i terminal</h3><p>Scenariusze TestQL, kody wyjścia i jawne asercje. Pexpect dla interaktywnych programów POSIX.</p><span class="card-meta">TESTQL · PTY · ODDZIELNY WORKER</span></article><article class="capability-card"><span class="card-icon" aria-hidden="true">▣</span><h3>WWW i portale</h3><p>Macierz urządzeń, geometria tekstu, zasłonięte kontrolki i ograniczony crawl wybranych ścieżek.</p><span class="card-meta">CDP · DOM · SCREENSHOTY</span></article><article class="capability-card"><span class="card-icon" aria-hidden="true">⌘</span><h3>Natywne GUI</h3><p>Izolowany pulpit Linux. Mysz, klawiatura i dopasowanie wzorców obrazów bez dostępu do DOM.</p><span class="card-meta">XVFB · MSS · PYAUTOGUI</span></article></div>
+</section>
+<section class="section workflow" id="workflow"><div class="container"><div class="section-heading"><p class="eyebrow">02 / METODA</p><h2>Od obserwacji<br>do odtwarzalnego zadania.</h2></div><div class="steps-grid"><article><span class="step-number">01</span><h3>Odizoluj aplikację</h3><p>Wskaż folder i komendę startową. Testuj kopię projektu, nie swój pulpit roboczy.</p></article><article><span class="step-number">02</span><h3>Zbierz dowody</h3><p>Zrzuty ekranu, wyrenderowany DOM i wyniki zdefiniowanych interakcji.</p></article><article><span class="step-number">03</span><h3>Sprawdź sygnały</h3><p>Reguły, powtórzenia i opcjonalna analiza wizyjna. Sugestia modelu to nie potwierdzony defekt.</p></article><article><span class="step-number">04</span><h3>Utwórz ticket</h3><p>Planfile otrzymuje propozycję z dowodami. Człowiek zachowuje decyzję o wykonaniu.</p></article></div></div></section>
+<section class="section container" id="start"><div class="start-grid"><div class="section-heading"><p class="eyebrow">03 / START</p><h2>Sprawdź Testwins<br>na samym Testwins.</h2><p>Landing page ma własny Dockerfile i scenariusze. Pakiet Python audytuje tę samą stronę, którą właśnie oglądasz.</p><p class="fine">Poniższa komenda działa w rozpakowanym repozytorium. Publikacja paczki w PyPI i wdrożenie domeny to osobne kroki.</p></div>
+<div class="install-panel"><div class="mode-tabs" role="group" aria-label="Wybierz środowisko"><button type="button" class="mode-tab active" data-platform="web" aria-pressed="true">WWW</button><button type="button" class="mode-tab" data-platform="shell" aria-pressed="false">Shell</button><button type="button" class="mode-tab" data-platform="gui" aria-pressed="false">GUI</button></div><p id="platform-state">Audyt landing page</p><pre><code id="install-command">make landing-check</code></pre><button id="copy-command" class="secondary" type="button">Kopiuj komendę</button><p id="copy-status" class="fine" role="status" aria-live="polite">Komenda do uruchomienia lokalnie.</p><a class="text-link" href="/docs/">Wymagania i konfiguracja →</a></div></div></section>
+<section class="section container faq" id="faq"><div class="section-heading"><p class="eyebrow">04 / BEZ NIEDOMÓWIEŃ</p><h2>Co warto wiedzieć?</h2></div><details id="faq-llm"><summary>Czy LLM jest wymagany?</summary><p id="faq-llm-answer">Nie. Audyt DOM, screenshoty i jawne asercje działają bez LLM. Analiza modelu jest opcjonalna i wymaga wybranego modelu obsługującego obrazy.</p></details><details><summary>Czy dane opuszczają środowisko?</summary><p>Domyślnie audyt działa lokalnie. Zdalny model otrzymuje obrazy dopiero po świadomym włączeniu transferu. Pulpit i dane testowe powinny być jednorazowe.</p></details><details><summary>Czy brak błędów oznacza poprawność całej aplikacji?</summary><p>Nie. Wynik dotyczy odwiedzonych stanów i zdefiniowanych asercji. Niekompletny test nie jest zaliczonym testem.</p></details><details><summary>Czy YOLO wykryje każde nachodzenie tekstu?</summary><p>Nie. Detektor lokalizuje obiekty. Nachodzenie tekstu w WWW jest sprawdzane przede wszystkim przez geometrię wyrenderowanego DOM. Do modeli GUI potrzebne są odpowiednie wagi i ocena jakości.</p></details></section>
+</main>
+<footer><div class="container footer-inner"><a class="brand" href="/">testwins<span class="brand-dot">.</span></a><p>Dowody zamiast domysłów.</p><div><a href="/docs/">Dokumentacja</a><a href="/privacy/">Prywatność</a><span>0.4.0 · Alpha</span></div></div></footer>
+</body></html>

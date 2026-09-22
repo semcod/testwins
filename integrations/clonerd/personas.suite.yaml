@@ -1,0 +1,12 @@
+schema: testwins.suite/v1
+id: clonerd-personas
+steps:
+- id: large
+  kind: web
+  config: journeys/personas.large.yaml
+- id: mobile
+  kind: web
+  config: journeys/personas.mobile.yaml
+- id: api-readonly
+  kind: api
+  config: api/readonly.yaml

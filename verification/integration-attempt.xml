@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="5" time="9.767" timestamp="2026-09-22T14:20:00.589148+00:00" hostname="localhost"><testcase classname="tests.test_release_browser" name="test_real_download_event_and_content_validation" time="5.797"><failure message="playwright._impl._errors.TimeoutError: Timeout 5000ms exceeded while waiting for event &quot;download&quot;&#10;=========================== logs ===========================&#10;waiting for event &quot;download&quot;&#10;============================================================">tmp_path = PosixPath('/tmp/pytest-of-root/pytest-6/test_real_download_event_and_c0')
+
+    def test_real_download_event_and_content_validation(tmp_path):
+        async def task():
+            c=config();c['downloads']['enabled']=True
+            async with async_playwright() as pw:
+                async with launch(pw,'chromium',c) as (browser,transport):
+                    assert transport=='cdp'
+                    ctx=await browser.new_context(**context_options(c,c['devices']['desktop'],'chromium'))
+                    try:
+                        await guard(ctx,c);page=await ctx.new_page();cdp=await ctx.new_cdp_session(page)
+                        await page.set_content('''&lt;button id="download" style="padding:20px" onclick="const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['Testwins controlled content'],{type:'text/plain'}));a.download='fixture.txt';a.click()"&gt;Download&lt;/button&gt;''')
+                        async with page.expect_download(timeout=5000) as pending:
+                            await act(page,{'action':'download','selector':'#download'},cdp,c['devices']['desktop'],2000)
+                        result=await inspect_download(await pending.value,{'filename_regex':r'fixture\.txt','starts_with_hex':'5465737477696e73'},c['downloads'],evidence(tmp_path,'download'))
+                        assert result['status']=='passed' and not result['retained']
+                    finally:await ctx.close()
+&gt;       asyncio.run(task())
+
+tests/test_release_browser.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/lib/python3.13/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/usr/lib/python3.13/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.13/asyncio/base_events.py:725: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_release_browser.py:48: in task
+    async with page.expect_download(timeout=5000) as pending:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/pyvenv/lib/python3.13/site-packages/playwright/_impl/_async_base.py:60: in __aexit__
+    await self._event.value
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;playwright._impl._async_base.AsyncEventInfo object at 0x7f4f1cb8ae40&gt;
+
+    @property
+    async def value(self) -&gt; T:
+&gt;       return mapping.from_maybe_impl(await self._future)
+                                       ^^^^^^^^^^^^^^^^^^
+E       playwright._impl._errors.TimeoutError: Timeout 5000ms exceeded while waiting for event "download"
+E       =========================== logs ===========================
+E       waiting for event "download"
+E       ============================================================
+
+/opt/pyvenv/lib/python3.13/site-packages/playwright/_impl/_async_base.py:35: TimeoutError</failure></testcase><testcase classname="tests.test_release_browser" name="test_real_storage_state_roundtrip_without_recording_tokens" time="0.708"><failure message="playwright._impl._errors.Error: Browser.new_context: Error setting storage state:&#10;net::ERR_BLOCKED_BY_ADMINISTRATOR at http://sut:8080&#10;Call log:&#10;  - navigating to &quot;http://sut:8080&quot;, waiting until &quot;load&quot;">tmp_path = PosixPath('/tmp/pytest-of-root/pytest-6/test_real_storage_state_roundt0')
+
+    def test_real_storage_state_roundtrip_without_recording_tokens(tmp_path):
+        async def task():
+            c=config();path=tmp_path/'.auth/user.json'
+            state={'cookies':[],'origins':[{'origin':'http://sut:8080','localStorage':[{'name':'token','value':'SYNTHETIC_AUTH_TOKEN'}]}]}
+            save_private(path,state);c['sessions']={'user':{'storage_state':str(path)}};c['default_session']='user'
+            async with async_playwright() as pw:
+                async with launch(pw,'chromium',c) as (browser,_):
+                    ctx=await browser.new_context(**context_options(c,c['devices']['desktop'],'chromium'))
+                    try:
+                        actual=await ctx.storage_state()
+                        assert any(s.get('origin')=='http://sut:8080' for s in actual['origins'])
+                    finally:await ctx.close()
+&gt;       asyncio.run(task())
+
+tests/test_release_browser.py:68: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/lib/python3.13/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/usr/lib/python3.13/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.13/asyncio/base_events.py:725: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_release_browser.py:63: in task
+    ctx=await browser.new_context(**context_options(c,c['devices']['desktop'],'chromium'))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/pyvenv/lib/python3.13/site-packages/playwright/async_api/_generated.py:14022: in new_context
+    await self._impl_obj.new_context(
+/opt/pyvenv/lib/python3.13/site-packages/playwright/_impl/_browser.py:171: in new_context
+    channel = await self._channel.send("newContext", None, params)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/pyvenv/lib/python3.13/site-packages/playwright/_impl/_connection.py:69: in send
+    return await self._connection.wrap_api_call(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;playwright._impl._connection.Connection object at 0x7f4f1c815590&gt;
+cb = &lt;function Channel.send.&lt;locals&gt;.&lt;lambda&gt; at 0x7f4f1c9c3e20&gt;
+is_internal = False, title = None
+
+    async def wrap_api_call(
+        self, cb: Callable[[], Any], is_internal: bool = False, title: str = None
+    ) -&gt; Any:
+        if self._api_zone.get():
+            return await cb()
+        task = asyncio.current_task(self._loop)
+        st: List[inspect.FrameInfo] = getattr(
+            task, "__pw_stack__", None
+        ) or inspect.stack(0)
+    
+        parsed_st = _extract_stack_trace_information_from_stack(st, is_internal, title)
+        self._api_zone.set(parsed_st)
+        try:
+            return await cb()
+        except Exception as error:
+&gt;           raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+E           playwright._impl._errors.Error: Browser.new_context: Error setting storage state:
+E           net::ERR_BLOCKED_BY_ADMINISTRATOR at http://sut:8080
+E           Call log:
+E             - navigating to "http://sut:8080", waiting until "load"
+
+/opt/pyvenv/lib/python3.13/site-packages/playwright/_impl/_connection.py:559: Error</failure></testcase><testcase classname="tests.test_release_browser" name="test_single_failure_one_repeat_blocks_gate_in_real_runner" time="1.823" /><testcase classname="tests.test_release_browser" name="test_missing_browser_keeps_all_planned_steps" time="0.298" /><testcase classname="tests.test_release_browser" name="test_actual_extended_ui_expectations" time="0.916" /></testsuite></testsuites>

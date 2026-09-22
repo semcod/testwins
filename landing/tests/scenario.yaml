@@ -1,0 +1,7 @@
+schema: testwins.task/v1
+id: landing-testql
+backend: testql
+files: [tests/landing.oql]
+url: http://sut:8080
+timeout_seconds: 120
+step_timeout_ms: 10000

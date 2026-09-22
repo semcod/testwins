@@ -1,0 +1,4 @@
+# Trusted, non-mutating example executed by TestQL, not parsed by Testwins.
+SHELL "python -m testwins --version" 10000
+ASSERT_EXIT_CODE 0
+ASSERT_STDOUT_CONTAINS "testwins 0.4.0"

@@ -1,0 +1,14 @@
+schema: testwins.api/v1
+id: clonerd-api
+base_url: http://127.0.0.1:8891
+requests:
+- id: menu
+  path: /v1/menu
+  expect:
+    status: 200
+    json_min_length:
+      /searchIndex: 15
+    json_any:
+    - path: /searchIndex
+      field: endpointId
+      contains: taskand

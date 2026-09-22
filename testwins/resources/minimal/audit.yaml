@@ -1,0 +1,17 @@
+project: my-app
+base_url: http://127.0.0.1:8080
+matrix: chromium
+headless: true
+routes:
+  - id: home
+    path: /
+journeys:
+  - id: home-contract
+    path: /
+    steps:
+      - id: heading
+        action: assert
+        expect: {kind: visible, selector: h1}
+axe:
+  enabled: false
+# Explicit scope: no axe, LLM or CV by default. This is not complete WCAG coverage.

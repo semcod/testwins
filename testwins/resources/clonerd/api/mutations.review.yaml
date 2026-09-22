@@ -1,0 +1,15 @@
+schema: testwins.api/v1
+id: clonerd-autonomy-reviewed
+base_url: http://127.0.0.1:8891
+requests:
+- id: cycle
+  method: POST
+  path: /api/auto/cycle
+  body:
+    intent: Controlled Testwins review against disposable test data
+  allow_mutation: true
+  expect:
+    status: 200
+    json_equals:
+      /schema: wellmanifest.autonomy/v1
+      /status: success
