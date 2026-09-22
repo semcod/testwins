@@ -37,4 +37,4 @@ mogą się różnić; nie należy ekstrapolować wyników jednego stosu na drugi
 
 TestQL jest osobnym extra. Polecenia korzystające z jego SDK raportują niekompletność, gdy brakuje publicznego API.
 `doctor` tylko pokazuje dostępność; obowiązkowy test backendu to `tools/verify_testql.py`. SDK z PyPI i Git mogą się różnić.
-Modele i Ultralytics mają własne licencje; nie zostały skopiowane ani sublicencjonowane jako MIT Testwins.
+Modele i Ultralytics mają własne licencje; nie zostały skopiowane ani sublicencjonowane jako Apache-2.0 Testwins.

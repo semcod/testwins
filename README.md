@@ -171,7 +171,7 @@ localStorage i browser download) pozostają wymagane na docelowym komputerze; w 
 administracyjna blokada URL. Nie wyłączano ani nie omijano tej polityki. Pełny Docker i zewnętrzne SDK nie były tu uruchomione.
 Ciężkie dowody z rendererów są w osobnym archiwum weryfikacyjnym; ZIP projektu zawiera podsumowania i testy do odtworzenia.
 
-MIT obejmuje własny kod Testwins. Warunki zależności i modeli są oddzielne: [THIRD_PARTY.md](THIRD_PARTY.md).
+Apache-2.0 obejmuje własny kod Testwins. Warunki zależności i modeli są oddzielne: [THIRD_PARTY.md](THIRD_PARTY.md).
 
 
 ## License
