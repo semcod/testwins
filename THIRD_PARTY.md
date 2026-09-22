@@ -1,6 +1,6 @@
 # Third-party notices and boundaries
 
-Testwins' own source is MIT (LICENSE). Optional packages and containers retain their
+Testwins' own source is Apache-2.0 (LICENSE). Optional packages and containers retain their
 own licenses. A dependency declaration does not sublicense dependencies or weights.
 No external model weights or font files are distributed in this source archive.
 

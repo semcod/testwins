@@ -43,7 +43,7 @@ są oznaczone MIT. Repozytorium pokazuje CC-BY4.0. README w momencie odczytu wsk
 wagi nowego detektora w HF PR37 — to ruchomy stan, nie zamrożone wydanie.
 Sprawdź konkretny komponent/checkpoint/revision przed pobraniem i dystrybucją.
 Nie kopiowano kodu OmniParser ani wag do projektu. Ultralytics oferuje AGPL/warunki
-komercyjne; MIT własnego kodu Testwins nie zastępuje tych warunków.
+komercyjne; Apache-2.0 własnego kodu Testwins nie zastępuje tych warunków.
 
 ## Źródła pierwotne
 
