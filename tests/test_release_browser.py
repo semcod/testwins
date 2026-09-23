@@ -19,12 +19,25 @@ from playwright.async_api import async_playwright,Page,expect
 pytestmark=pytest.mark.browser
 
 
+def find_chromium():
+    if os.environ.get('CHROMIUM_EXECUTABLE'):return os.environ['CHROMIUM_EXECUTABLE']
+    try:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as p:
+            if Path(p.chromium.executable_path).exists():return p.chromium.executable_path
+    except Exception:pass
+    for name in ('google-chrome','google-chrome-stable','chromium','chromium-browser'):
+        p=shutil.which(name)
+        if p and not p.startswith('/snap/'):return p
+    return shutil.which('chromium')
+
+
 def config():
     c=load(matrix='chromium',headless=True)
     c['devices']={'desktop':c['devices']['desktop']};c['axe']['enabled']=False
     c['capture'].update(repeats=1,scroll_tiles=1,settle_ms=30,timeout_ms=400,max_cell_seconds=30)
     c['rules']['heuristic_alignment']=False
-    exe=os.environ.get('CHROMIUM_EXECUTABLE') or shutil.which('chromium')
+    exe=find_chromium()
     if not exe:pytest.skip('Set CHROMIUM_EXECUTABLE to an installed Chromium binary')
     c['executables']['chromium']=exe
     return c
@@ -45,7 +58,7 @@ def test_real_download_event_and_content_validation(tmp_path):
                 ctx=await browser.new_context(**context_options(c,c['devices']['desktop'],'chromium'))
                 try:
                     await guard(ctx,c);page=await ctx.new_page();cdp=await ctx.new_cdp_session(page)
-                    await page.set_content('''<button id="download" style="padding:20px" onclick="const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['Testwins controlled content'],{type:'text/plain'}));a.download='fixture.txt';a.click()">Download</button>''')
+                    await page.set_content('''<button id="download" style="padding:20px" onclick="const a=document.createElement('a');a.href=window.URL.createObjectURL(new Blob(['Testwins controlled content'],{type:'text/plain'}));a.download='fixture.txt';a.click()">Download</button>''')
                     async with page.expect_download(timeout=5000) as pending:
                         await act(page,{'action':'download','selector':'#download'},cdp,c['devices']['desktop'],2000)
                     result=await inspect_download(await pending.value,{'filename_regex':r'fixture\.txt','starts_with_hex':'5465737477696e73'},c['downloads'],evidence(tmp_path,'download'))
