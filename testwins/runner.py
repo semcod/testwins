@@ -326,7 +326,7 @@ async def run(cfg: dict, output: Path) -> Path:
                         await capture(page,cdp,bname,dname,device,version,transport,scene["id"]+"--"+step["id"],repeat,error)
                         check["after"]=snapshots[-1]["image"]
                 except Exception as exc:
-                    cell["errors"].append({"scene":scene["id"],"repeat":repeat,"exception_type":type(exc).__name__,"code":"TW-CAPTURE-FAILED"})
+                    cell["errors"].append({"scene":scene["id"],"repeat":repeat,"exception_type":type(exc).__name__,"message":str(exc),"code":"TW-CAPTURE-FAILED"})
                 finally:
                     if context:await context.close()
 
@@ -342,9 +342,9 @@ async def run(cfg: dict, output: Path) -> Path:
                 for dname,device,cell in local:
                     cell["version"]=browser.version
                     try:await asyncio.wait_for(run_cell(browser,bname,dname,device,browser.version,transport,cell),cfg["capture"]["max_cell_seconds"])
-                    except Exception as e:cell["errors"].append({"code":"TW-CELL-FAILED","exception_type":type(e).__name__})
+                    except Exception as e:cell["errors"].append({"code":"TW-CELL-FAILED","exception_type":type(e).__name__,"message":str(e)})
         except Exception as e:
-            for _,_,cell in local:cell["errors"].append({"code":"TW-BROWSER-UNAVAILABLE","exception_type":type(e).__name__})
+            for _,_,cell in local:cell["errors"].append({"code":"TW-BROWSER-UNAVAILABLE","exception_type":type(e).__name__,"message":str(e)})
 
     async with async_playwright() as pw:
         await asyncio.gather(*(browser_worker(pw,b) for b in MATRICES[cfg["matrix"]]))

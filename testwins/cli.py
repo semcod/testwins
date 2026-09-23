@@ -79,6 +79,7 @@ def main(argv: list[str] | None=None) -> int:
             print(json.dumps({'saved':True,'private_file':str(a.output),'included_in_reports':False}));return 0
         if a.command=='doctor':
             import importlib.metadata, importlib.util, shutil
+            from pathlib import Path
             result={'package':'testwins','python':sys.version.split()[0], 'docker':shutil.which('docker'),'packages':{}}
             for name in ('testwins','testql','playwright','litellm','opencv-python-headless','ultralytics','mss','pyautogui','pexpect'):
                 try:result['packages'][name]=importlib.metadata.version(name)
@@ -87,6 +88,18 @@ def main(argv: list[str] | None=None) -> int:
                 from testql.verification import VerificationRequest,run_verification
                 result['testql_public_api']=True
             except ImportError:result['testql_public_api']=False
+            pw_exe = None
+            try:
+                from playwright.sync_api import sync_playwright
+                with sync_playwright() as p:
+                    pw_exe = p.chromium.executable_path
+            except Exception:
+                pass
+            result['browsers'] = {
+                'playwright_chromium': pw_exe if pw_exe and Path(pw_exe).exists() else None,
+                'system_chromium': shutil.which('chromium') or shutil.which('chromium-browser'),
+                'system_chrome': shutil.which('google-chrome') or shutil.which('google-chrome-stable'),
+            }
             result['note']='Optional backends are reported individually; missing SDK never becomes an executed test.'
             print(json.dumps(result,indent=2));return 0
         if a.command=='init':

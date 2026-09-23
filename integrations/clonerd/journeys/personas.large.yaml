@@ -173,7 +173,7 @@ journeys:
     action: assert
     expect:
       kind: visible
-      selector: :nth-match(:is(.data-table, .dv-cards):visible, 1)
+      selector: :nth-match(:is(.data-table, .dv-cards, .data-view):visible, 1)
   - id: novnc-control
     action: assert
     expect:

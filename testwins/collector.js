@@ -113,10 +113,18 @@
           const rr=rect(tr),vr=intersect(rr,ownClip);
           if(rr.width<1||rr.height<1||vr.width<1||vr.height<1)continue;
           let ancestorClipX=false,ancestorClipY=false;
+          let scrollableX=false,scrollableY=false;
           for(let p=parent(el);p;p=parent(p)){const pc=getComputedStyle(p),pr=rect(p.getBoundingClientRect());
             const cx=pr.x+p.clientLeft,cy=pr.y+p.clientTop;
-            if(['hidden','clip'].includes(pc.overflowX)&&(rr.x<cx-2||rr.x+rr.width>cx+p.clientWidth+2))ancestorClipX=true;
-            if(['hidden','clip'].includes(pc.overflowY)&&(rr.y<cy-2||rr.y+rr.height>cy+p.clientHeight+2))ancestorClipY=true;
+            if(!scrollableX){
+              if(['auto','scroll'].includes(pc.overflowX))scrollableX=true;
+              else if(['hidden','clip'].includes(pc.overflowX)&&(rr.x<cx-2||rr.x+rr.width>cx+p.clientWidth+2))ancestorClipX=true;
+            }
+            if(!scrollableY){
+              if(['auto','scroll'].includes(pc.overflowY))scrollableY=true;
+              else if(['hidden','clip'].includes(pc.overflowY)&&(rr.y<cy-2||rr.y+rr.height>cy+p.clientHeight+2))ancestorClipY=true;
+            }
+            if(scrollableX && scrollableY)break;
           }
           texts.push({selector,ancestors,rect:rr,visibleRect:vr,text:child.textContent.trim().slice(0,160),
             intentional: intentional||cs.textOverflow==='ellipsis'||parseInt(cs.webkitLineClamp)>0,

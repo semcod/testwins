@@ -32,8 +32,11 @@ async def launch(pw: Any, name: str, cfg: dict) -> AsyncIterator[tuple[Any,str]]
             else:
                 exe=cfg["executables"].get(name)
                 if not exe:
-                    exe=pw.chromium.executable_path if name=="chromium" else next((shutil.which(x) for x in CANDIDATES[name] if shutil.which(x)),None)
-                if not exe or not Path(exe).exists():raise RuntimeError(f"browser unavailable: {name}")
+                    if name=="chromium":
+                        exe=pw.chromium.executable_path if Path(pw.chromium.executable_path).exists() else next((shutil.which(x) for x in ("chromium","google-chrome","google-chrome-stable","chromium-browser") if shutil.which(x)),None)
+                    else:
+                        exe=next((shutil.which(x) for x in CANDIDATES[name] if shutil.which(x)),None)
+                if not exe or not Path(exe).exists():raise RuntimeError(f"browser unavailable: {name} (binary not found; run 'playwright install {name}' or configure in cfg['executables'])")
                 profile=Path(tempfile.mkdtemp(prefix="testwins-"+name+"-"))
                 logfile=(profile/"launcher.log").open("wb")
                 args=[exe,"--remote-debugging-port=0","--remote-debugging-address=127.0.0.1",
