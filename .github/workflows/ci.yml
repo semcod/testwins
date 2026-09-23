@@ -20,14 +20,14 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
-      - run: make install
+      - run: make install EXTRAS=live,terminal,cv,dev
       - run: make install-testql-source TESTQL_REF=main
       - run: python -m pytest -q -m 'not browser' --junitxml=verification/ci-unit-tests.xml
       - name: Real installed TestQL public SDK, not a mocked contract
         run: python tools/verify_testql.py
       - name: Build distribution and check metadata
         run: python -m build && python -m twine check dist/*.whl dist/*.tar.gz
-      - run: python -m compileall -q testwins tools && node --check testwins/collector.js && sh -n docker/entrypoint.sh
+      - run: python -m compileall -q testwins tools && node --check testwins/collector.js && node --check testwins/ux_probe.js && sh -n docker/entrypoint.sh
       - uses: actions/upload-artifact@v7
         if: always()
         with:

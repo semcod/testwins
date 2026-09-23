@@ -3,14 +3,14 @@
   "schema": "wellmanifest.docs/document/v1",
   "id": "ux-strategies",
   "kind": "information",
-  "version": 1,
+  "version": 2,
   "title": "Strategie UX, reakcje interfejsu i naprawy z subllm",
   "status": "implemented",
   "owner": "semcod/testwins",
   "created": "2026-09-23",
   "updated": "2026-09-23",
   "review_after": "2026-12-23",
-  "source_revision": "60a99ddc180f19225e951acd158ae7590360267e",
+  "source_revision": "4ebfe800c66c27b5bcd47f07c44ebc802b02182a",
   "affected_repositories": [
     "semcod/testwins"
   ],
@@ -198,7 +198,9 @@ Dobierz własne selektory, budżety i scenariusze person przed użyciem na aplik
 Rozszerzenie zakresu o kolejne ekrany wymaga zadeklarowania ich w podróżach;
 jeden udany scenariusz nie świadczy o reszcie produktu.
 
-Weryfikacja tej zmiany (2026-09-23): 277 testów jednostkowych zaliczonych,
+### Historia weryfikacji: wersja 1
+
+Pierwsza weryfikacja (2026-09-23, baza `60a99dd`): 277 testów jednostkowych zaliczonych,
 3 pominięte z powodu opcjonalnych integracji; 18 testów przeglądarkowych
 zaliczonych, 1 timeout pobrania pliku. Ten sam timeout odtworzono na niezmienionej
 rewizji bazowej `60a99ddc180f19225e951acd158ae7590360267e`; kontynuacja: PLF-002.
@@ -208,7 +210,30 @@ i 0 dla poprawnego wariantu; manifesty obu przebiegów zweryfikowano.
 Zbudowano wheel/sdist i sprawdzono ich metadane przez Twine. Kontrola dokumentu
 przypiętym checkerem wellmanifest/docs 0.1.0 przeszła lokalnie.
 
-Pełny zestaw nie jest zielony z powodu wskazanego timeoutu. Lokalna konfiguracja
+W tej pierwszej weryfikacji pełny zestaw nie był zielony z powodu timeoutu. Lokalna konfiguracja
 chronionego Validatora nie zawiera `semcod/testwins`, a repozytorium nie deklaruje
 OneDev. Przypięcie dokumentacji i lokalne testy nie oznaczają wdrożonej bramy
 CI ani zgody na samodzielne scalenie.
+
+### Ponowna weryfikacja przed publikacją: wersja 2
+
+Dołączono istniejące poprawki lokalnego `main` do `ea1be8b`, w tym poprawę
+stabilizacji zrzutów oraz test pobrania z jednoznacznym `window.URL`.
+Po połączeniu na rewizji wskazanej w metadanych wszystkie 19 testów
+przeglądarkowych przeszło; timeout zapisany w PLF-002 już nie występuje.
+
+Przebieg GitHub Actions `35916094359` wykazał trzy błędy `ModuleNotFoundError:
+cv2`. Workflow instalował zależności bez dodatku `cv`, choć wykonywał testy
+OpenCV. Krok instalacji jednostkowej teraz jawnie obejmuje `cv`, a kontrola
+JavaScript sprawdza również `ux_probe.js`. Zachowano wszystkie testy i bramki.
+
+Po uzupełnieniu zależności w odizolowanym środowisku zaliczono wszystkie
+280 testów jednostkowych bez pominięć. Rzeczywiście zainstalowany TestQL 1.2.66
+wykonał trzy kroki scenariusza `shell-smoke` z wynikiem `passed`.
+Wheel/sdist, Twine i kontrole składni również przeszły. To dowody lokalne;
+wyniki GitHub i zatwierdzenie publikacji należy obserwować dla wypchniętego HEAD.
+
+Chroniony preflight nadal zwraca `PUBLICATION_PROFILE_MISSING`; watchdog
+publikacji również klasyfikuje PR #2 jako `unregistered`. Wymagane jest
+niezależne przyjęcie profilu, a następnie walidacja dokładnego HEAD i wyniku
+scalenia. Lokalny sukces testów nie usuwa tej blokady (kontynuacja PLF-003).
