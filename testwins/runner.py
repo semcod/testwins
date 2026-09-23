@@ -204,10 +204,15 @@ async def run(cfg: dict, output: Path) -> Path:
     async def capture(page,cdp,bname,dname,device,version,transport,stage,repeat,extra=None):
         await settle(page,cfg)
         before=await collect(page,cdp,cfg)
-        # Playwright screenshot uses the connected transport (CDP for Chromium-based browsers).
         png=await page.screenshot(type="png",full_page=False,scale="css",animations="disabled" if cfg["capture"]["freeze_animations"] else "allow")
         s=await collect(page,cdp,cfg)
         stable=layout_signature(before)==layout_signature(s)
+        if not stable:
+            await asyncio.sleep(0.2)
+            png=await page.screenshot(type="png",full_page=False,scale="css",animations="disabled" if cfg["capture"]["freeze_animations"] else "allow")
+            s_retry=await collect(page,cdp,cfg)
+            if layout_signature(s)==layout_signature(s_retry):
+                s=s_retry;stable=True
         s["stable"]=stable;s["url"]=redact_url(page.url)
         s["links"]=[redact_url(x) for x in s["links"]]
         findings=detect(s,cfg,device)+(extra or [])
@@ -281,6 +286,7 @@ async def run(cfg: dict, output: Path) -> Path:
                     await page.goto(urljoin(cfg["base_url"],scene["path"]),wait_until="domcontentloaded")
                     if cfg["capture"]["freeze_animations"]:
                         await page.add_style_tag(content="*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important;scroll-behavior:auto!important}")
+                        await page.evaluate("() => { if(!window.__tw_instant){window.__tw_instant=true;const orig=Element.prototype.scrollIntoView;Element.prototype.scrollIntoView=function(a){if(a&&typeof a==='object'&&a.behavior==='smooth')a=Object.assign({},a,{behavior:'instant'});return orig.call(this,a);};} }")
                     await capture(page,cdp,bname,dname,device,version,transport,scene["id"]+"--initial",repeat)
                     cell["observed_scenes"]+=1
                     if not scene.get("steps"):
