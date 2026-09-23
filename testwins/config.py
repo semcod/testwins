@@ -20,6 +20,7 @@ DEVICES = {
 DEFAULT = {
     "schema": "testwins.config/v1", "project": "my-app", "base_url": "http://sut:8080",
     "matrix": "cdp", "devices": DEVICES, "routes": [{"id": "home", "path": "/"}],
+    "ux": {"strategy": None, "habit": "standard", "budgets": {}},
     "journeys": [], "allowed_origins": [], "locale": "pl-PL", "timezone": "Europe/Warsaw",
     "color_scheme": "light", "headless": False, "sandbox": False,
     "executables": {}, "cdp_endpoints": {},
@@ -98,7 +99,7 @@ def validate(cfg: dict) -> dict:
             if len(steps) > 100: raise ValueError("journey is too long")
             step_ids = set()
             for s in steps:
-                closed(s, {"id","action","selector","value","key","expect","allow_mutation"}, "step")
+                closed(s, {"id","action","selector","value","key","expect","allow_mutation","ux"}, "step")
                 if not re.fullmatch(r"[a-z][a-z0-9_-]{0,63}", s["id"]) or s["id"] in step_ids:
                     raise ValueError("invalid or duplicated step id")
                 step_ids.add(s["id"])
@@ -151,6 +152,8 @@ def validate(cfg: dict) -> dict:
             raise ValueError("suppressions need reason, owner and expiry")
         from datetime import date
         date.fromisoformat(str(s["expires"]))
+    from .ux import validate_ux
+    validate_ux(cfg)
     return cfg
 
 

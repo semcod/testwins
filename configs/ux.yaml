@@ -1,0 +1,30 @@
+schema: testwins.config/v1
+project: ux-lab
+base_url: http://127.0.0.1:8080
+matrix: chromium
+headless: true
+# This fixture exercises declared UX contracts. Axe is a separate optional scope here.
+axe: {enabled: false}
+devices:
+  desktop: {width: 1440, height: 900, dpr: 1, touch: false, mobile: false}
+ux:
+  strategy: dashboard
+  habit: standard
+  budgets: {response_ms: 3000, feedback_ms: 700, motion_ms: 500}
+capture: {repeats: 1, scroll_tiles: 1, freeze_animations: false}
+routes: []
+journeys:
+  - id: filter
+    path: /
+    steps:
+      - id: active
+        action: click
+        selector: '#choose'
+        allow_mutation: true
+        expect: {kind: text, selector: '#result', value: Active projects}
+        ux:
+          feedback: {kind: text, selector: '#status', value: Filter applied}
+          announce: true
+          focus: '#result'
+          visual_change: '#choose'
+          motion: '#choose'

@@ -125,6 +125,11 @@ def markdown(root: Path,d: dict) -> None:
               f"Wymagane kroki: {d['gate']['expected_checks']}; zaliczone: {d['gate']['passed_checks']}; nieudane: {d['gate']['failed_checks']}; zablokowane/niewykonane: {d['gate']['blocked_checks']}.", ""]
     for c in d['checks']:
         lines.append(f"- {c['cell']} / {c['scene']} / {c['step']} / repeat {c['repeat']}: **{c['status']}**")
+        if c.get('ux'):
+            u=c['ux'];o=u.get('observations',{})
+            lines.append(f"  UX: {u['strategy']} / {u['habit']}; {u['status']}; response ms: {o.get('response_ms')}; feedback ms: {o.get('feedback_ms')}. "
+                         f"Unobserved layers: {', '.join(u.get('unobserved_layers', []))}. "
+                         f"[Evidence]({c.get('ux_evidence', 'report.json')})")
     for f in d["findings"]:
         lines += ["",f"## {f['rule']} — {f['status']}","",f["title"],"",f["message"],"",f"Stan: `{f['stage']}`. ID: `{f['id']}`.",""]
         for s in f["selectors"]:lines.append("    "+s.replace("\n"," "))
@@ -171,6 +176,19 @@ def html_report(root: Path,d: dict) -> None:
         cells=", ".join(sorted({x["cell"] for x in f["occurrences"]}))
         cards.append(f"<details class='finding'><summary><span class='badge {f['status']}'>{f['status']}</span> {e(f['title'])}<small>{e(f['rule'])} · {e(f['stage'])}</small></summary><p>{e(f['message'])}</p><pre>{e(chr(10).join(f['selectors']))}</pre><p>{e(cells)}</p><p><a href='{e(img)}'>Screenshot</a> · <a href='{e(o['evidence'][1])}'>DOM / geometry</a></p><a href='{e(annotation)}'><img loading='lazy' src='{e(annotation)}' alt='Annotated screenshot'></a></details>")
     contracts="".join(f"<tr><td>{e(c['cell'])}</td><td>{e(c['scene'])} / {e(c['step'])}</td><td>{c['repeat']}</td><td>{e(c['status'])}</td></tr>" for c in d['checks'])
+    ux_rows=[]
+    for c in d['checks']:
+        if not c.get('ux'):continue
+        u=c['ux'];o=u.get('observations',{})
+        label=f"{c['cell']} / {c['scene']} / {c['step']} / r{c['repeat']}"
+        def ms(value):return '—' if value is None else f'{value:.1f}'
+        ux_rows.append(f"<tr><td>{e(label)}</td><td>{e(u['strategy'])} / {e(u['habit'])}</td><td>{e(u['status'])}</td>"
+                       f"<td>{ms(o.get('response_ms'))}</td><td>{ms(o.get('feedback_ms'))}</td>"
+                       f"<td>{e(', '.join(u.get('unobserved_layers', [])))}</td>"
+                       f"<td><a href='{e(c.get('ux_evidence','report.json'))}'>Dowód UX</a></td></tr>")
+    ux_table=("<h2>Strategia i reakcje UX</h2><p>Pomiary od zdarzenia wejścia do obserwacji; nie są metryką INP ani badaniem prawdziwych użytkowników.</p>"
+              "<div class='scroll'><table><thead><tr><th>Krok</th><th>Strategia / nawyk</th><th>Stan</th><th>Wynik ms</th><th>Feedback ms</th><th>Nieobserwowane warstwy</th><th>Dowody</th></tr></thead><tbody>"
+              + ''.join(ux_rows) + '</tbody></table></div>') if ux_rows else ''
     doc=f'''<!doctype html><html lang="pl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'">
 <title>Testwins · {e(d['project'])}</title><style>
@@ -180,6 +198,7 @@ def html_report(root: Path,d: dict) -> None:
 <p><a href="REPORT.md">Raport Markdown</a> · <a href="report.json">JSON</a> · <a href="matrix.csv">Macierz CSV</a> · <a href="proposals.json">Propozycje Planfile</a> · <a href="manifest.json">Manifest dowodów</a></p>
 <h2>Macierz wykonania</h2><div class="scroll"><table><thead><tr><th>Browser / version</th><th>Device</th><th>Transport</th><th>Status</th><th>Confirmed</th><th>Candidates</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div>
 <h2>Bramka wykonania: {e(d['gate']['status'])}</h2><p>Kod: {d['gate']['exit_code']} · wymagane: {d['gate']['expected_checks']} · zaliczone: {d['gate']['passed_checks']} · nieudane: {d['gate']['failed_checks']} · niewykonane/zablokowane: {d['gate']['blocked_checks']}</p><div class="scroll"><table><thead><tr><th>Komórka</th><th>Scenariusz / krok</th><th>Powtórzenie</th><th>Stan</th></tr></thead><tbody>{contracts}</tbody></table></div>
+{ux_table}
 <h2>Obserwacje</h2><input id="filter" aria-label="Filtruj obserwacje" placeholder="Filtruj: overlap, mobile, selektor…">{''.join(cards) or '<p>Brak obserwacji spełniających reguły. Sprawdź pokrycie powyżej.</p>'}
 <footer><strong>Authority: none.</strong><p>{'<br>'.join(e(x) for x in d['limitations'])}</p></footer>
 <script>document.getElementById('filter').addEventListener('input',e=>{{let q=e.target.value.toLowerCase();document.querySelectorAll('.finding').forEach(x=>x.hidden=!x.textContent.toLowerCase().includes(q))}})</script></html>'''

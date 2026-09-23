@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Testwins UX lab</title>
+<style>
+body {font:18px/1.6 system-ui;max-width:700px;margin:3rem auto;padding:1rem;background:#f4f7fa;color:#182334}
+button {font:inherit;padding:.8rem 1.2rem;border:2px solid #526172;border-radius:8px;background:white;color:#182334}
+button.selected {background:#1e604c;color:white;border-color:#1e604c}
+#result {padding:1rem;border-left:4px solid #1e604c;background:white}
+#status {min-height:2em} :focus-visible {outline:3px solid #1748bb;outline-offset:4px}
+</style>
+<h1>Filter workspace</h1>
+<p>Choose a filter. The UI should acknowledge the action, mark the selection and focus the result.</p>
+<button id="choose" type="button">Show active projects</button>
+<p id="status" role="status" aria-live="polite"></p>
+<div id="result" tabindex="-1">All projects</div>
+<script>
+const broken = new URLSearchParams(location.search).has('broken');
+if (broken) document.querySelector('#status').removeAttribute('role');
+if (broken) document.querySelector('#status').removeAttribute('aria-live');
+document.querySelector('#choose').addEventListener('click', () => {
+  if (!broken) document.querySelector('#choose').classList.add('selected');
+  document.querySelector('#status').textContent = 'Filter applied';
+  document.querySelector('#result').textContent = 'Active projects';
+  if (!broken) document.querySelector('#result').focus();
+});
+</script>
+</html>

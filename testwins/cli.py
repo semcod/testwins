@@ -24,6 +24,11 @@ def parser() -> argparse.ArgumentParser:
     t.add_argument('--apply',action='store_true');t.add_argument('--include-candidates',action='store_true');t.add_argument('--ready',action='store_true');t.add_argument('--limit',type=int,default=25);t.add_argument('--offset',type=int,default=0)
     t.add_argument('--receipt',type=Path,help='Write publication receipt outside the immutable input run')
     sub.add_parser('doctor')
+    sub.add_parser('strategies', help='List UX strategies, simulated habits and coverage layers')
+    u=sub.add_parser('ux-review', help='Evidence-bound repair advice through subactor/subllm')
+    u.add_argument('run', type=Path);u.add_argument('--output', type=Path, required=True)
+    u.add_argument('--env', type=Path, default=Path('.env'))
+    u.add_argument('--limit', type=int, default=10)
     x=sub.add_parser('api',help='Separate explicit HTTP contracts; not a browser matrix')
     x.add_argument('--config',type=Path,required=True);x.add_argument('--output',type=Path,default=Path('artifacts/api'));x.add_argument('--approve-mutations',action='store_true')
     g=sub.add_parser('gate',help='Require every planned assertion; no confidence-based bypass')
@@ -59,6 +64,14 @@ def main(argv: list[str] | None=None) -> int:
         if a.command in {'watch','live-status','live-serve','live-export','capacity','diagnose','catalog'}:
             from .live.cli import dispatch
             return dispatch(a)
+        if a.command=='strategies':
+            from .ux import catalog
+            print(json.dumps(catalog(), ensure_ascii=False, indent=2));return 0
+        if a.command=='ux-review':
+            from .ux_review import review
+            from .llm import env_file
+            result=review(a.run,a.output,env_file(a.env),limit=a.limit)
+            print(json.dumps({'output':str(a.output),'status':result['status'],'executed':False}));return 0
         if a.command=='api':
             from .api_contracts import run
             root=run(a.config,a.output,approve_mutations=a.approve_mutations)
@@ -81,7 +94,7 @@ def main(argv: list[str] | None=None) -> int:
             import importlib.metadata, importlib.util, shutil
             from pathlib import Path
             result={'package':'testwins','python':sys.version.split()[0], 'docker':shutil.which('docker'),'packages':{}}
-            for name in ('testwins','testql','playwright','litellm','opencv-python-headless','ultralytics','mss','pyautogui','pexpect'):
+            for name in ('testwins','testql','playwright','subactor-subllm','litellm','opencv-python-headless','ultralytics','mss','pyautogui','pexpect'):
                 try:result['packages'][name]=importlib.metadata.version(name)
                 except importlib.metadata.PackageNotFoundError:result['packages'][name]=None
             try:

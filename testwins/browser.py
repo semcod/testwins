@@ -84,6 +84,9 @@ def context_options(cfg: dict, device: dict, name: str, scene: dict | None = Non
             "color_scheme":cfg["color_scheme"],"reduced_motion":"reduce",
             "service_workers":"block","accept_downloads":cfg.get("downloads",{}).get("enabled",False)}
     if name!="firefox":result["is_mobile"]=device["mobile"]
+    if cfg.get("ux", {}).get("strategy"):
+        from .ux import HABITS
+        result["reduced_motion"] = HABITS[cfg["ux"]["habit"]]["reduced_motion"]
     from .sessions import state_for
     state=state_for(cfg,scene)
     if state is not None:result["storage_state"]=state
