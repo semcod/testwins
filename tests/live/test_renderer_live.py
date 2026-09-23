@@ -22,7 +22,18 @@ CLEAN='''<!doctype html><html><head><meta name="viewport" content="width=device-
 
 @pytest.mark.browser
 def test_real_cdp_find_confirm_recover_and_css_provenance(tmp_path):
-    exe=os.environ.get('CHROMIUM_EXECUTABLE') or shutil.which('chromium')
+    exe=os.environ.get('CHROMIUM_EXECUTABLE')
+    if not exe:
+        try:
+            from playwright.sync_api import sync_playwright
+            with sync_playwright() as p:
+                if Path(p.chromium.executable_path).exists():exe=p.chromium.executable_path
+        except Exception:pass
+    if not exe:
+        for name in ('google-chrome','google-chrome-stable','chromium','chromium-browser'):
+            p=shutil.which(name)
+            if p and not p.startswith('/snap/'):exe=p;break
+    exe=exe or shutil.which('chromium')
     if not exe:pytest.skip('Chromium unavailable')
     audit=load();audit['executables']={'chromium':exe};audit['headless']=True;audit['axe']['enabled']=False;audit['rules']['heuristic_alignment']=False
     audit['capture']['settle_ms']=30;audit['capture']['timeout_ms']=1000
