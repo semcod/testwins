@@ -3,14 +3,14 @@
   "schema": "wellmanifest.docs/document/v1",
   "id": "ux-strategies",
   "kind": "information",
-  "version": 7,
+  "version": 8,
   "title": "Strategie UX, reakcje interfejsu i naprawy z subllm",
   "status": "implemented",
   "owner": "semcod/testwins",
   "created": "2026-09-23",
   "updated": "2026-09-24",
   "review_after": "2026-12-23",
-  "source_revision": "80ebb9fc9731e5405fc7f4bbc5e0cb25e5f7ddec",
+  "source_revision": "9bd5bc8e27329de7db3e405256eed90a0a7b7948",
   "affected_repositories": [
     "semcod/testwins"
   ],
@@ -30,7 +30,8 @@
     "repo://semcod/testwins/tests/test_frames_browser.py",
     "repo://semcod/testwins/configs/c2004/frames.yaml",
     "repo://semcod/testwins/testwins/sticky.py",
-    "repo://semcod/testwins/tests/test_sticky_browser.py"
+    "repo://semcod/testwins/tests/test_sticky_browser.py",
+    "repo://semcod/testwins/tests/test_css_clipping_browser.py"
   ]
 }
 ---
@@ -576,3 +577,28 @@ C2004 nadal zawiera plik. To odrębna regresja wdrożenia, zapisana jako PLF-255
 w maskservice/c2004. Nie zmieniono wdrożenia ani nie ukryto tych wyników.
 Oba pełne audyty nadal mają status `incomplete`; nie są dowodem poprawności
 całej aplikacji ani wszystkich rozmiarów ekranu.
+
+
+## Wersja 8: tekst ukryty wizualnie przez CSS (PLF-012)
+
+Komunikat dla czytnika ekranu może zachowywać prostokąty DOM Range, mimo że
+`clip-path: inset(50%)` całkowicie usuwa jego namalowany obszar. Collector
+rozpoznaje pusty `inset()` z procentowymi odsunięciami (lub zerami): suma
+przeciwległych boków wynosi co najmniej 100%. Dotyczy również przodków
+i hostów Shadow DOM. Wynika to z geometrii
+[kształtów CSS](https://www.w3.org/TR/css-shapes-1/#supported-basic-shapes),
+a nie z nazwy klasy, selektora ani roli ARIA.
+
+Węzły i obliczony `clipPath` pozostają w dowodach z polem `fullyClipped`;
+nienamalowany tekst nie tworzy wizualnych naruszeń przycięcia lub nakładania.
+Fokus pozostający w tak ukrytym elemencie tworzy lukę
+`focused_clipped_control`, która blokuje kompletny wynik. Po odsłonięciu na
+fokus element wraca do zwykłych kontroli. Semantyka dostępności nie jest
+modyfikowana.
+
+To ograniczone rozpoznanie pustego kształtu, nie ogólny parser CSS masking.
+Częściowe odsunięcia, nieobsługiwane wyrażenia i inne kształty nie wyłączają
+wcześniejszych kontroli. Rzeczywisty overflow w elemencie nazwanym `sr-only`
+lub oznaczonym `role=status` nadal jest raportowany. Przypadki pozytywne,
+negatywne, Shadow DOM i fokus sprawdza `tests/test_css_clipping_browser.py`;
+regresja w `tests/test_fail_closed.py` chroni wynik bramki.

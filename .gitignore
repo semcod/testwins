@@ -25,4 +25,5 @@ build/
 /.worktrees/
 /.subactor/leases/
 /.subactor/recovery/
+/.subactor/cache/
 /.planfile/

@@ -51,7 +51,7 @@ def finalize(root: Path, data: dict, cfg: dict) -> None:
         gaps=[g for s in ss for g in s["gaps"]]
         blocking={"required_detector_missing","required_detector_failed","capture_limit","detector_limit",
                   "unstable_layout","alignment_contract","overlay_contract","fonts_pending","baseline_incompatible","required_performance_missing",
-                  "frame_unavailable","frame_nested","sticky_contract"}
+                  "frame_unavailable","frame_nested","sticky_contract","focused_clipped_control"}
         skipped=any(c["status"] in ("not_run","blocked") for c in data["checks"] if c["cell"]==cell["id"])
         cell["complete"]=not cell["errors"] and cell["observed_scenes"]==cell["expected_scenes"] and not skipped and not any(g["kind"] in blocking for g in gaps)
         cell["scope_gaps"]=gaps

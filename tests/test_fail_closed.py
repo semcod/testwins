@@ -34,3 +34,15 @@ def test_single_unverified_overlay_cannot_pass_without_repeatable_findings(tmp_p
     assert r['summary']['confirmed']==0
     assert r['gate']['status']=='incomplete'
     assert json.loads((tmp_path/'manifest.json').read_text())['assessment']=='incomplete'
+
+
+def test_focused_fully_clipped_control_is_not_a_clean_visual_audit(tmp_path):
+    r = data()
+    r['cells'][0].update(errors=[], observed_scenes=2)
+    r['snapshots'] = [{'meta': {'browser': 'chromium', 'device': 'desktop'},
+                      'gaps': [{'kind': 'focused_clipped_control', 'selector': '#action'}]}]
+    finalize(tmp_path, r, load())
+    assert r['summary']['confirmed'] == 0
+    assert r['coverage']['state'] == 'incomplete'
+    assert r['gate']['status'] == 'incomplete'
+    assert r['cells'][0]['scope_gaps'][0]['selector'] == '#action'
