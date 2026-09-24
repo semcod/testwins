@@ -38,7 +38,7 @@ DEFAULT = {
     "baseline": {"directory": None, "threshold": 0.005, "color_delta": 24,
                  "fail_on_difference": False},
     "crawl": {"enabled": False, "allow_paths": [], "max_pages": 5},
-    "suppressions": [],
+    "suppressions": [], "overlays": [],
 }
 
 
@@ -152,6 +152,8 @@ def validate(cfg: dict) -> dict:
             raise ValueError("suppressions need reason, owner and expiry")
         from datetime import date
         date.fromisoformat(str(s["expires"]))
+    from .overlays import validate_overlays
+    validate_overlays(cfg)
     from .ux import validate_ux
     validate_ux(cfg)
     return cfg

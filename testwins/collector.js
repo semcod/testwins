@@ -12,6 +12,7 @@
   const parent = el => el.parentElement || (el.getRootNode() instanceof ShadowRoot ? el.getRootNode().host : null);
   const contains = (a,b) => {for(let e=b;e;e=parent(e)) if(e===a) return true; return false;};
   const pathCache = new WeakMap();
+  const observedElements = new Map(), hitElements = new WeakMap();
   const path = el => {
     if(!el || el.nodeType!==1) return '';
     if(pathCache.has(el)) return pathCache.get(el);
@@ -125,12 +126,13 @@
         'wordBreak','lineHeight','fontFamily','zIndex','opacity','transform','pointerEvents','isolation',
         'flexShrink','flexGrow','gap','marginTop','marginRight','marginBottom','marginLeft',
         'paddingTop','paddingRight','paddingBottom','paddingLeft','color','backgroundColor'].map(k=>[k,cs[k]]))};
+      observedElements.set(el,n);hitElements.set(el,[]);
       if(privateNode && visibleRect.width && visibleRect.height) masks.push(visibleRect);
       if(interactive && !n.disabled && !n.inert && cs.pointerEvents!=='none' && visibleRect.width>2 && visibleRect.height>2){
         for(const [fx,fy] of [[.5,.5],[.2,.2],[.8,.2],[.2,.8],[.8,.8]]){
           const x=visibleRect.x+visibleRect.width*fx,y=visibleRect.y+visibleRect.height*fy;
           const top=hit(x,y);n.hitSamples++;
-          if(top && !contains(el,top) && !contains(top,el)){n.occluded++;n.covering.push(path(top));}
+          if(top && !contains(el,top) && !contains(top,el)){n.occluded++;n.covering.push(path(top));hitElements.get(el).push(top);}
         }
         n.covering=Array.from(new Set(n.covering));
       }
@@ -178,6 +180,50 @@
       }
     }
   }
+  const overlays=(opts.overlays||[]).map(contract=>{
+    const result={id:contract.id,state:'invalid',errors:[],trigger:null,overlay:null,background:[],coverage:[]};
+    const unique=selector=>{const matches=document.querySelectorAll(selector);
+      if(matches.length!==1)throw new Error('Trigger and overlay selectors must each match exactly one element');
+      return matches[0];};
+    const visible=el=>{const n=observedElements.get(el);return !!n&&n.visibleRect.width>0&&n.visibleRect.height>0;};
+    try{
+      const trigger=unique(contract.trigger),overlay=unique(contract.overlay),tn=observedElements.get(trigger);
+      result.trigger=path(trigger);result.overlay=path(overlay);
+      const expanded=trigger.getAttribute('aria-expanded');
+      if(!['true','false'].includes(expanded))throw new Error('Trigger needs explicit aria-expanded true/false');
+      if(!overlay.id||!(trigger.getAttribute('aria-controls')||'').split(/\s+/).includes(overlay.id))
+        throw new Error('Trigger aria-controls must reference the overlay id');
+      if(document.querySelectorAll('#'+CSS.escape(overlay.id)).length!==1)
+        throw new Error('Overlay id must be unique');
+      if(!visible(trigger)||!tn.interactive||tn.disabled||tn.inert||tn.ariaHiddenAncestor||!tn.hitSamples||tn.occluded)
+        throw new Error('Trigger must be visible, enabled and reachable');
+      if(contains(trigger,overlay)||contains(overlay,trigger))throw new Error('Trigger and overlay must be separate');
+      if((expanded==='true')!==visible(overlay))throw new Error('Overlay visibility must agree with aria-expanded');
+      const on=observedElements.get(overlay);
+      if(expanded==='true'&&(on.inert||on.ariaHiddenAncestor))throw new Error('Active overlay must not be inert or aria-hidden');
+      const backgrounds=new Set();
+      for(const selector of contract.background){
+        const matches=document.querySelectorAll(selector);
+        if(!matches.length)throw new Error('Background selector did not match any control');
+        for(const el of matches){
+          if(!el.matches('button,a[href],input:not([type=hidden]),select,textarea,[role=button],[role=link],[tabindex]'))
+            throw new Error('Background selectors must match controls, not containers');
+          if(contains(el,trigger)||contains(trigger,el)||contains(el,overlay)||contains(overlay,el))
+            throw new Error('Background must exclude the trigger and overlay subtree');
+          backgrounds.add(el);
+          if(backgrounds.size>128)throw new Error('Background control limit exceeded');
+        }
+      }
+      result.background=Array.from(backgrounds,path);
+      result.state=expanded==='true'?'active':'inactive';
+      if(result.state==='active')for(const el of backgrounds){
+        const n=observedElements.get(el),covers=hitElements.get(el)||[];
+        if(n&&n.occluded&&covers.length===n.occluded&&covers.every(top=>contains(overlay,top)))
+          result.coverage.push({selector:n.selector,covering:n.covering,occluded:n.occluded,hitSamples:n.hitSamples});
+      }
+    }catch(error){result.state='invalid';result.coverage=[];result.errors.push(error.name==='SyntaxError'?'Invalid CSS selector':error.message);}
+    return result;
+  });
   const alignments=opts.alignment.map(a=>({id:a.id,edge:a.edge,tolerance:a.tolerance_px,
     nodes:Array.from(document.querySelectorAll(a.selector)).map(el=>({selector:path(el),rect:rect(el.getBoundingClientRect())})).filter(n=>n.rect.width&&n.rect.height)}));
   const clone=document.documentElement.cloneNode(true);
@@ -199,6 +245,6 @@
     screen:{width:screen.width,height:screen.height},dpr:devicePixelRatio,
     scroll:{x:scrollX+ox,y:scrollY+oy,layoutX:scrollX,layoutY:scrollY},document:{width:document.documentElement.scrollWidth,height:document.documentElement.scrollHeight},
     hasViewportMeta:!!document.querySelector('meta[name=viewport]'),fontsStatus:document.fonts.status,
-    title:document.title.slice(0,200),nodes,texts,masks,alignments,links:Array.from(new Set(links)).slice(0,200),
+    title:document.title.slice(0,200),nodes,texts,masks,alignments,overlays,links:Array.from(new Set(links)).slice(0,200),
     gaps,truncated,html,elapsedMs:Math.round(performance.now()-started)};
 }

@@ -25,6 +25,8 @@ def detect(snapshot: dict, cfg: dict, device: dict) -> list[dict]:
     def emit(f: Finding) -> None:
         key = (f.rule, tuple(sorted(set(f.selectors))))
         if key not in findings: findings[key] = f
+    from .overlays import assess_overlays
+    overlay_findings, intentional_coverage = assess_overlays(snapshot, cfg)
     vp = snapshot["viewport"]
     if snapshot["document"]["width"] > vp["width"]+rules["clip_px"]:
         offenders = [n for n in snapshot["nodes"] if n["tag"] not in ("html","body")
@@ -82,7 +84,9 @@ def detect(snapshot: dict, cfg: dict, device: dict) -> list[dict]:
                          "Element img zakończył ładowanie, ale naturalWidth wynosi zero.",
                          [n["selector"]],[vr],"normal",.97))
         if not n["interactive"] or n["disabled"] or n["inert"]: continue
-        if n["hitSamples"] and n["occluded"]/n["hitSamples"]>=.6:
+        if n["hitSamples"] and n["occluded"]/n["hitSamples"]>=.6 and not any(
+                c["covering"] == n["covering"] and c["occluded"] == n["occluded"]
+                for c in intentional_coverage.get(n["selector"], [])):
             emit(Finding("TW-CONTROL-OCCLUDED","Kontrolka zasłonięta dla kliknięcia",
                          f"Test trafienia wskazał obcy element w {n['occluded']}/{n['hitSamples']} próbek.",
                          [n["selector"]],[vr],"high",.94,details={"covering":n["covering"]}))
@@ -121,7 +125,7 @@ def detect(snapshot: dict, cfg: dict, device: dict) -> list[dict]:
                 emit(Finding("TW-ALIGNMENT-CANDIDATE","Możliwe odchylenie od wyrównania rodzeństwa",
                              "Podobne elementy mają wspólną lewą krawędź z jednym odstępstwem; intencja układu nie jest znana.",
                              [n["selector"]],[n["rect"]],"low",.61,True))
-    return [f.to_dict() for f in findings.values()]
+    return overlay_findings + [f.to_dict() for f in findings.values()]
 
 
 def from_axe(result: dict) -> list[dict]:
