@@ -8,7 +8,7 @@ from PIL import Image
 
 def reason_code(exc):
     """Only our fixed diagnostic vocabulary may leave a browser exception."""
-    codes = ('target_not_iframe', 'origin_or_document_unavailable', 'private',
+    codes = ('target_not_iframe', 'origin_or_document_unavailable', 'private', 'padding_unsupported',
              'transform_unsupported', 'visibility_unsupported', 'visual_viewport_unsupported',
              'not_fully_visible', 'clipped', 'occluded', 'replaced_or_nested',
              'moved_during_screenshot', 'boundary_changed', 'target_missing_or_ambiguous')
@@ -48,6 +48,9 @@ def validate_frames(cfg):
 
 GEOMETRY = """(el, masks) => {
   if(el.localName !== 'iframe') throw Error('frame_target_not_iframe');
+  const style=getComputedStyle(el);
+  if(['paddingLeft','paddingRight','paddingTop','paddingBottom'].some(k=>parseFloat(style[k])!==0))
+    throw Error('frame_padding_unsupported');
   // contentDocument is null for cross-origin and sandbox-opaque documents.
   if(!el.contentDocument || !el.contentDocument.body) throw Error('frame_origin_or_document_unavailable');
   const parent = e => e.parentElement || (e.getRootNode() instanceof ShadowRoot ? e.getRootNode().host : null);

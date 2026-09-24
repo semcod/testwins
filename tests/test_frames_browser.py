@@ -66,6 +66,7 @@ def test_frame_pixels_masks_and_trusted_input_use_child_coordinates(tmp_path,tou
 @pytest.mark.parametrize('mutation',[
     "document.querySelector('iframe').setAttribute('data-private','')",
     "document.querySelector('iframe').style.transform='scale(.8)'",
+    "document.querySelector('iframe').style.padding='10px'",
     "document.querySelector('iframe').style.top='350px'",
     "document.body.insertAdjacentHTML('beforeend','<div style=\"position:absolute;inset:0;background:red\"></div>')",
     "document.body.append(document.querySelector('iframe').cloneNode(true))",
