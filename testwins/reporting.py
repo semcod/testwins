@@ -66,6 +66,12 @@ def finalize(root: Path, data: dict, cfg: dict) -> None:
                       "state":"incomplete" if any(not c["complete"] for c in data["cells"]) or data["run_gaps"] else "complete",
                       "unit":"browser-device","scope":"configured scenes and bounded rendered observations only"}
     data["summary"]={k:sum(f["status"]==k for f in data["findings"]) for k in ("confirmed","candidate","suppressed")}
+    measured=[s['stability'] for s in data['snapshots'] if s.get('stability')]
+    data['observation_stability']={
+        'measured':len(measured),'unmeasured':len(data['snapshots'])-len(measured),
+        'layout_changed':sum(s['layout'] is False for s in measured),
+        'state_changed':sum(s['state'] is False for s in measured),
+        'content_changed':sum(s['content'] is False for s in measured)}
     data["gate"]=evaluate(data)
     data["limitations"]=[
         "Confirmed means a repeatable detector/explicit UI-contract violation, not proof of product intent or a guarantee of all defects.",
@@ -121,6 +127,7 @@ def markdown(root: Path,d: dict) -> None:
            "## Macierz","","| Przeglądarka | Urządzenie | Transport | Stan | Naruszenia | Kandydaci |",
            "|---|---|---|---|---:|---:|"]
     for c in d["cells"]:lines.append(f"| {c['browser']} | {c['device']} | {c['transport']} | {c['status']} | {c['confirmed']} | {c['candidates']} |")
+    lines += ['', stability_text(d), '']
     lines += ["", "## Bramka obowiązkowych kontraktów", "", f"Wynik: **{d['gate']['status']}**, kod wyjścia: {d['gate']['exit_code']}.",
               f"Wymagane kroki: {d['gate']['expected_checks']}; zaliczone: {d['gate']['passed_checks']}; nieudane: {d['gate']['failed_checks']}; zablokowane/niewykonane: {d['gate']['blocked_checks']}.", ""]
     for c in d['checks']:
@@ -136,6 +143,15 @@ def markdown(root: Path,d: dict) -> None:
         o=representative(f,d);lines += ["",f"Dowód: [{o['cell']}]({o['evidence'][0]})."]
     lines += ["","## Ograniczenia",""]+d["limitations"]
     (root/"REPORT.md").write_text("\n".join(lines)+"\n","utf-8")
+
+
+def stability_text(data: dict) -> str:
+    s=data.get('observation_stability')
+    if not s:return 'Brak osobnego pomiaru stabilności geometrii, stanu i treści.'
+    return (f"Stabilność obserwacji: {s['measured']} pomiarów, {s['unmeasured']} bez pomiaru. "
+            f"Zmiana geometrii: {s['layout_changed']}; stanu detektorów: {s['state_changed']}; "
+            f"treści: {s['content_changed']}. Sama zmiana treści przy stałej geometrii "
+            "nie oznacza przesunięcia układu. Poprawność treści wymaga osobnego kontraktu.")
 
 
 def matrix_csv(root: Path,d: dict) -> None:
@@ -197,6 +213,7 @@ def html_report(root: Path,d: dict) -> None:
 <div class="metrics"><div class="metric"><b>{d['summary']['confirmed']}</b>powtarzalnych naruszeń</div><div class="metric"><b>{d['summary']['candidate']}</b>kandydatów do oceny</div><div class="metric"><b>{d['coverage']['incomplete_cells']} / {d['coverage']['expected_cells']}</b>niepełnych komórek</div></div>
 <p><a href="REPORT.md">Raport Markdown</a> · <a href="report.json">JSON</a> · <a href="matrix.csv">Macierz CSV</a> · <a href="proposals.json">Propozycje Planfile</a> · <a href="manifest.json">Manifest dowodów</a></p>
 <h2>Macierz wykonania</h2><div class="scroll"><table><thead><tr><th>Browser / version</th><th>Device</th><th>Transport</th><th>Status</th><th>Confirmed</th><th>Candidates</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div>
+<p>{e(stability_text(d))}</p>
 <h2>Bramka wykonania: {e(d['gate']['status'])}</h2><p>Kod: {d['gate']['exit_code']} · wymagane: {d['gate']['expected_checks']} · zaliczone: {d['gate']['passed_checks']} · nieudane: {d['gate']['failed_checks']} · niewykonane/zablokowane: {d['gate']['blocked_checks']}</p><div class="scroll"><table><thead><tr><th>Komórka</th><th>Scenariusz / krok</th><th>Powtórzenie</th><th>Stan</th></tr></thead><tbody>{contracts}</tbody></table></div>
 {ux_table}
 <h2>Obserwacje</h2><input id="filter" aria-label="Filtruj obserwacje" placeholder="Filtruj: overlap, mobile, selektor…">{''.join(cards) or '<p>Brak obserwacji spełniających reguły. Sprawdź pokrycie powyżej.</p>'}

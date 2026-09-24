@@ -3,14 +3,14 @@
   "schema": "wellmanifest.docs/document/v1",
   "id": "ux-strategies",
   "kind": "information",
-  "version": 3,
+  "version": 4,
   "title": "Strategie UX, reakcje interfejsu i naprawy z subllm",
   "status": "implemented",
   "owner": "semcod/testwins",
   "created": "2026-09-23",
   "updated": "2026-09-24",
   "review_after": "2026-12-23",
-  "source_revision": "60aaccd5bedba3cc46e10ca89aafec2839bd2ade",
+  "source_revision": "97e33d422d2a7f460e309e4cd26dbacf56bd5efe",
   "affected_repositories": [
     "semcod/testwins"
   ],
@@ -20,7 +20,9 @@
     "repo://semcod/testwins/testwins/ux.py",
     "repo://semcod/testwins/testwins/ux_probe.js",
     "repo://semcod/testwins/testwins/ux_review.py",
-    "repo://semcod/testwins/tests/test_target_geometry_browser.py"
+    "repo://semcod/testwins/tests/test_target_geometry_browser.py",
+    "repo://semcod/testwins/tests/test_observation.py",
+    "repo://semcod/testwins/tests/test_observation_browser.py"
   ]
 }
 ---
@@ -296,3 +298,69 @@ Identyfikatory raportów: `2026-09-24T072635-051Z-def310d5` (przed),
 Wszystkie bramki tych przebiegów nadal mają status `incomplete` z powodu
 niestabilnych obserwacji. Nie dodano pokrycia wnętrza iframe ani automatycznego
 rozstrzygania, czy zakrycie tła przez menu jest zamierzone.
+
+### Stabilność obserwacji i dowodów: wersja 4
+
+PLF-005 rozdziela stabilność geometrii, stanu detektorów i zebranej treści.
+Próba na C2004 odtworzyła fałszywe `unstable_layout`: zmienił się wyłącznie
+tekst zegara `#bottom-time`, przy identycznych 824 węzłach oraz geometrii
+103 zakresów tekstu. Licznik czasu nie oznacza sam w sobie ruchu układu.
+
+Nowy pomiar uwzględnia prostokąty elementów i zakresów tekstu, widoczne
+fragmenty, rozmiary celów, maski, przewinięcie oraz viewport. Wcześniejszy
+pomiar pomijał ruch tekstu wewnątrz nieruchomego rodzica i zmianę przycięcia.
+Porównanie stanu dodatkowo obejmuje wyniki trafień, warstwy zasłaniające,
+fokus, disabled/inert, flagi przycięcia i zebrane style. Równe prostokąty
+nie wystarczają, gdy nad kontrolką zmieniła się aktywna warstwa.
+
+`snapshot.json`, wpisy `report.json.snapshots` oraz wynik live zawierają
+`stability`: `layout`, `state`, `content`, `attempts` i wersjonowaną metodę.
+`stable` wymaga zgodności geometrii i stanu. Zmiana zebranej treści przy ich
+zgodności jest raportowana osobno, bez luki `unstable_layout`. Raporty HTML,
+Markdown i JSON podają liczniki zmian oraz obserwacji bez takiego pomiaru.
+To nie jest potwierdzenie prawidłowości komunikatu, jego związku z kliknięciem
+ani stabilności wszystkich pikseli. Nadal potrzebne są asercje treści i UX;
+maskowana lub ucięta przez limity treść nie jest w pełni porównywana.
+
+Tryb wsadowy zachowuje jedną ponowną próbę. Każdą klatkę otaczają świeże
+obserwacje DOM; zapis pochodzi z końcowej próby także wtedy, gdy pozostaje
+niestabilna. Maski obejmują obie pozycje prywatnych elementów zaobserwowane
+wokół tej klatki. Nie gwarantuje to zamaskowania niezaobserwowanej pozycji
+pośredniej ani pełnej anonimizacji. Live stosuje tę samą ocenę w jednej
+próbie, z dotychczasowym odstępem pomiarów. Niestabilna geometria lub stan
+nadal uniemożliwiają potwierdzenie naruszeń oraz zaliczenie zakresu pomiaru.
+
+Testy Chromium kontrolują zmianę zegara, przesunięcie samego tekstu,
+zasłonięcie bez zmiany wymiarów, przemieszczanie prywatnego elementu
+w obu próbach i ustabilizowanie drugiej próby. Sprawdzają końcowy DOM,
+maski na rzeczywistym obrazie, wynik bramki, manifest oraz zgodność live.
+Żaden z tych przypadków nie wymaga wyłączenia reguły ani wykluczenia selektora.
+
+Pozostałe rozszerzenia: jawny kontrakt celowego zasłonięcia tła przez otwarte
+menu oraz obserwacja wnętrza ramek. Ta poprawka nie dodaje takiego pokrycia
+ani nie uznaje istniejących zasłonięć automatycznie za poprawne.
+
+Weryfikacja 2026-09-24: 296 testów jednostkowych i 40 przeglądarkowych
+zaliczonych, bez pominięć w wybranych zestawach. Pięć z sześciu początkowych
+regresji geometrii nie przechodziło na bazie. Przypięty checker dokumentacji
+również przeszedł.
+
+| C2004: scenariusz | Kroki | Niestabilne zrzuty przed → po | Wynik po |
+|---|---|---|---|
+| Menu myszą/dotykiem, 3 urządzenia | 12/12 | 27/30 → 1/30 | incomplete; 10 powtarzalnych zasłonięć |
+| Menu klawiaturą, desktop | 4/4 | 9/10 → 0/10 | failed; 2 powtarzalne zasłonięcia |
+
+Nowe raporty: `2026-09-24T080625-411Z-2d2513a0` i
+`2026-09-24T080809-746Z-56b8f22f`. Porównanie korzysta z poprzednich raportów
+wersji 3 wymienionych wyżej; wszystkie cztery manifesty zweryfikowano.
+W nowych pomiarach treść zmieniła się odpowiednio w 25/30 i 8/10 klatek.
+Jedna końcowa obserwacja po zamknięciu menu nadal zmieniała geometrię i stan;
+pozostaje luką. Zasłonięcia nie zniknęły: stabilne dowody pozwalają teraz
+potwierdzić ich powtarzalność. Nie rozstrzyga to intencji otwartego menu.
+Nie zastosowano wykluczeń i nie ogłoszono zaliczenia całego audytu.
+
+C2004 na końcu pomiaru: `7548feb420fbbde7e3a746fbf69ae1b6b7b9aac3`.
+Względem wcześniejszego `6067606` inny wykonawca zmienił testy zdrowia
+urządzeń, bez zmian frontendu. Testwins nie modyfikował aplikacji ani jej
+wdrożenia. Te podróże obejmują lokalne menu na porcie 8100, nie wnętrze
+poradnika iframe ani pozostałe silniki przeglądarek.
