@@ -39,7 +39,7 @@ DEFAULT = {
     "baseline": {"directory": None, "threshold": 0.005, "color_delta": 24,
                  "fail_on_difference": False},
     "crawl": {"enabled": False, "allow_paths": [], "max_pages": 5},
-    "suppressions": [], "overlays": [], "frames": [],
+    "suppressions": [], "overlays": [], "frames": [], "sticky_regions": [],
 }
 
 
@@ -157,6 +157,8 @@ def validate(cfg: dict) -> dict:
     validate_overlays(cfg)
     from .frames import validate_frames
     validate_frames(cfg)
+    from .sticky import validate_sticky_regions
+    validate_sticky_regions(cfg)
     from .ux import validate_ux
     validate_ux(cfg)
     return cfg
