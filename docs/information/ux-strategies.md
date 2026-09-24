@@ -3,14 +3,14 @@
   "schema": "wellmanifest.docs/document/v1",
   "id": "ux-strategies",
   "kind": "information",
-  "version": 4,
+  "version": 5,
   "title": "Strategie UX, reakcje interfejsu i naprawy z subllm",
   "status": "implemented",
   "owner": "semcod/testwins",
   "created": "2026-09-23",
   "updated": "2026-09-24",
   "review_after": "2026-12-23",
-  "source_revision": "97e33d422d2a7f460e309e4cd26dbacf56bd5efe",
+  "source_revision": "94fbdb5b28c301a5cf27b89a480c137b81f3998d",
   "affected_repositories": [
     "semcod/testwins"
   ],
@@ -22,7 +22,10 @@
     "repo://semcod/testwins/testwins/ux_review.py",
     "repo://semcod/testwins/tests/test_target_geometry_browser.py",
     "repo://semcod/testwins/tests/test_observation.py",
-    "repo://semcod/testwins/tests/test_observation_browser.py"
+    "repo://semcod/testwins/tests/test_observation_browser.py",
+    "repo://semcod/testwins/testwins/overlays.py",
+    "repo://semcod/testwins/tests/test_overlays.py",
+    "repo://semcod/testwins/tests/test_overlays_browser.py"
   ]
 }
 ---
@@ -364,3 +367,48 @@ Względem wcześniejszego `6067606` inny wykonawca zmienił testy zdrowia
 urządzeń, bez zmian frontendu. Testwins nie modyfikował aplikacji ani jej
 wdrożenia. Te podróże obejmują lokalne menu na porcie 8100, nie wnętrze
 poradnika iframe ani pozostałe silniki przeglądarek.
+
+
+## Wersja 5: jawne kontrakty nakładek (PLF-006)
+
+Operator może zadeklarować relację przycisku, nakładki i konkretnych kontrolek tła:
+
+```yaml
+overlays:
+  - id: language-menu
+    trigger: '#language-trigger'
+    overlay: '#language-menu'
+    background: ['.role-select', 'button[data-key]']
+```
+
+Kontrakt obejmuje obserwacje całej konfiguracji. Używaj go w scenach, w których
+te elementy istnieją, i ustaw `capture.ready_selector` na stan gotowy do interakcji.
+Przycisk i nakładka muszą pasować pojedynczo, a `aria-controls` przycisku wskazywać
+unikalne ID nakładki. Stan `aria-expanded` musi odpowiadać widoczności nakładki.
+Przycisk pozostaje widoczny, dostępny i trafialny; aktywna nakładka nie może być
+`inert` ani `aria-hidden`. Selektory tła wskazują kontrolki, nie kontenery, i nie
+mogą obejmować przycisku lub wnętrza nakładki. Limit wynosi 16 kontraktów,
+16 selektorów tła i 128 dopasowanych kontrolek na kontrakt.
+
+`TW-CONTROL-OCCLUDED` nie powstaje dla takiej kontrolki tylko wtedy, gdy wszystkie
+jej zasłonięte punkty faktycznie trafiają w zadeklarowaną aktywną nakładkę lub jej
+potomków. Inny element nad menu, kontrolka spoza listy, wadliwy stan zamknięcia
+oraz problemy wewnątrz menu nadal podlegają detekcji. Nieweryfikowalna relacja
+produkuje `TW-OVERLAY-CONTRACT` i lukę `overlay_contract`; pojedyncza taka
+obserwacja wystarcza, aby bramka nie zaliczyła zakresu. Nie wyłącza zwykłych reguł. Kontrakt nie zmienia
+reguł nakładania tekstu, geometrii, masek ani oceny stabilności. Obejmuje dokument
+główny; nie rozszerza pokrycia ramek ani zamkniętego Shadow DOM.
+
+JSON zachowuje `overlay_observations` ze stanem, selektorami, trafieniami,
+powtórzeniem, stabilnością i ścieżką dowodu. HTML/Markdown pokazują licznik
+zamierzonych zasłonięć osobno od naruszeń i wykluczeń. Niestabilne obserwacje nie
+wchodzą do licznika stabilnych zasłonięć. Zmiana relacji wokół zrzutu unieważnia
+stabilność stanu również w trybie live.
+
+Kontrakt nie dowodzi, że menu daje się zamknąć. Podróż musi otworzyć i zamknąć
+menu, sprawdzić `aria-expanded` oraz oczekiwany fokus przez `ux.focus`.
+Konfiguracja klawiaturowa C2004 sprawdza Enter, fokus wybranego języka, Escape
+i powrót do przycisku. Wymaga wdrożenia poprawionego menu C2004; starsza aplikacja
+bez `aria-controls` ma otrzymać błąd, a nie automatyczne wykluczenie zasłonięć.
+
+Walidacja zakresu silnika: 308 testów jednostkowych i 56 przeglądarkowych Chromium.

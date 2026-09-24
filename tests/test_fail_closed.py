@@ -20,3 +20,17 @@ def test_bounded_crawl_error_not_full_coverage(tmp_path):
     r=data();r['cells'][0].update(errors=[],observed_scenes=2)
     r['run_gaps']=[{'kind':'crawl_failure'}];finalize(tmp_path,r,load())
     assert r['coverage']['state']=='incomplete'
+
+
+def test_single_unverified_overlay_cannot_pass_without_repeatable_findings(tmp_path):
+    from testwins.overlays import assess_overlays
+    cfg=load();cfg['overlays']=[{'id':'menu','trigger':'#trigger','overlay':'#menu','background':['#behind']}]
+    snapshot={}
+    findings,allowed=assess_overlays(snapshot,cfg)
+    assert findings and not allowed
+    r=data();r['cells'][0].update(errors=[],observed_scenes=2)
+    r['snapshots']=[{'meta':{'browser':'chromium','device':'desktop'},'gaps':snapshot['gaps']}]
+    finalize(tmp_path,r,cfg)
+    assert r['summary']['confirmed']==0
+    assert r['gate']['status']=='incomplete'
+    assert json.loads((tmp_path/'manifest.json').read_text())['assessment']=='incomplete'

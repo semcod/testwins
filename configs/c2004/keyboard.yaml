@@ -1,4 +1,4 @@
-# C2004 rendered UI validation; set --url to the observed deployment.
+# C2004 rendered UI validation; requires language picker aria-controls and keyboard recovery.
 schema: testwins.config/v1
 project: c2004
 base_url: http://127.0.0.1:8100
@@ -15,7 +15,7 @@ capture:
   max_cell_seconds: 600
   max_elements: 5000
   max_text_rects: 10000
-  ready_selector: .lang-trigger
+  ready_selector: body:has(.lang-trigger:not(:disabled)):has(.rab-wrapper a):has(.logs-collector-wrapper button):has(.role-select):has(.hardware-runtime-select):has(button[data-key])
   freeze_animations: false
 rules:
   heuristic_alignment: false
@@ -48,10 +48,11 @@ journeys:
       response_ms: 3000
       feedback_ms: 1000
       motion_ms: 500
+      focus: .lang-menu-item[aria-selected="true"]
     key: Enter
   - id: close
     action: press
-    selector: .lang-trigger
+    selector: .lang-menu-item[aria-selected="true"]
     allow_mutation: true
     expect:
       kind: attribute
@@ -69,7 +70,8 @@ journeys:
       response_ms: 3000
       feedback_ms: 1000
       motion_ms: 500
-    key: Enter
+      focus: .lang-trigger
+    key: Escape
 devices:
   desktop:
     width: 1440
@@ -77,3 +79,13 @@ devices:
     dpr: 1
     touch: false
     mobile: false
+overlays:
+- id: language-menu
+  trigger: .lang-trigger
+  overlay: .lang-menu
+  background:
+  - .rab-wrapper a
+  - .logs-collector-wrapper button
+  - .role-select
+  - .hardware-runtime-select
+  - button[data-key]

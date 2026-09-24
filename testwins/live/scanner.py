@@ -17,7 +17,7 @@ from ..model import Finding
 from .diagnosis import enrich,supplementary,BY_RULE
 
 OBSERVER=Path(__file__).with_name('observer.js').read_text('utf-8')
-BASE_RULES={'TW-TEXT-OVERLAP','TW-TEXT-CLIPPED','TW-VIEWPORT-OVERFLOW','TW-VIEWPORT-META','TW-CONTROL-OCCLUDED',
+BASE_RULES={'TW-OVERLAY-CONTRACT','TW-TEXT-OVERLAP','TW-TEXT-CLIPPED','TW-VIEWPORT-OVERFLOW','TW-VIEWPORT-META','TW-CONTROL-OCCLUDED',
   'TW-TARGET-SMALL','TW-ALIGNMENT','TW-ALIGNMENT-CANDIDATE','TW-POINTER-DISABLED','TW-FOCUS-OBSCURED',
   'TW-ARIA-HIDDEN-FOCUS','TW-EMPTY-UI','TW-TEXT-SMALL','TW-FONT-PENDING','TW-LAYOUT-UNSTABLE','TW-IMAGE-BROKEN','TW-EXPECTATION'}
 
@@ -106,7 +106,7 @@ class BrowserScanner:
             if not stable:gaps.append({'kind':'unstable_layout','layout_stable':s['stability']['layout'],
                                        'state_stable':s['stability']['state']})
             # DOM completeness for supported light/open-shadow surfaces. iframe/canvas gaps remain explicit.
-            if not s.get('truncated') and stable and not any(g.get('kind') in {'detector_limit','alignment_contract'} for g in gaps):
+            if not s.get('truncated') and stable and not any(g.get('kind') in {'detector_limit','alignment_contract','overlay_contract'} for g in gaps):
                 result['covered_rules']=sorted(BASE_RULES)
             else:
                 for ff in f:ff['candidate']=True
