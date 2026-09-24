@@ -79,13 +79,14 @@ def detect(snapshot: dict, cfg: dict, device: dict) -> list[dict]:
     for n in snapshot["nodes"]:
         vr=n["visibleRect"]
         if not area(vr): continue
-        if n["brokenImage"]:
+        if n.get("brokenImage"):
             emit(Finding("TW-IMAGE-BROKEN","Obraz nie został wyświetlony",
                          "Element img zakończył ładowanie, ale naturalWidth wynosi zero.",
                          [n["selector"]],[vr],"normal",.97))
-        if not n["interactive"] or n["disabled"] or n["inert"]: continue
-        if n["hitSamples"] and n["occluded"]/n["hitSamples"]>=.6 and not any(
-                c["covering"] == n["covering"] and c["occluded"] == n["occluded"]
+        if not n.get("interactive") or n.get("disabled") or n.get("inert"): continue
+        hit_samples = n.get("hitSamples", 0)
+        if hit_samples and n.get("occluded", 0) / hit_samples >= .6 and not any(
+                c["covering"] == n.get("covering", []) and c["occluded"] == n.get("occluded", 0)
                 for c in intentional_coverage.get(n["selector"], [])):
             emit(Finding("TW-CONTROL-OCCLUDED","Kontrolka zasłonięta dla kliknięcia",
                          f"Test trafienia wskazał obcy element w {n['occluded']}/{n['hitSamples']} próbek.",
@@ -125,6 +126,32 @@ def detect(snapshot: dict, cfg: dict, device: dict) -> list[dict]:
                 emit(Finding("TW-ALIGNMENT-CANDIDATE","Możliwe odchylenie od wyrównania rodzeństwa",
                              "Podobne elementy mają wspólną lewą krawędź z jednym odstępstwem; intencja układu nie jest znana.",
                              [n["selector"]],[n["rect"]],"low",.61,True))
+    if rules.get("auth_form_standards"):
+        for n in snapshot.get("nodes", []):
+            if n.get("tag") == "input" and n.get("inputType") == "password":
+                vr = n.get("visibleRect") or n.get("rect") or {"x": 0, "y": 0, "width": 0, "height": 0}
+                fd = n.get("formDetails")
+                if not fd or not fd.get("hasForm"):
+                    emit(Finding("TW-AUTH-FORM-NO-PARENT", "Pole hasła poza elementem <form>",
+                                 "Pole hasła (input[type=password]) znajduje się poza elementem <form>, co uniemożliwia menedżerom haseł powiązanie formularza logowania.",
+                                 [n["selector"]], [vr], "high", 0.95))
+                else:
+                    form_sel = fd.get("selector") or n["selector"]
+                    if fd.get("method") != "post":
+                        emit(Finding("TW-AUTH-FORM-METHOD", "Brak atrybutu method='post' w formularzu uwierzytelniania",
+                                     f"Formularz logowania ma metodę '{fd.get('method') or 'get'}'; menedżery haseł wymagają method='post' do automatycznego zapisu poświadczeń.",
+                                     [form_sel, n["selector"]], [vr], "high", 0.93,
+                                     details={"current_method": fd.get("method"), "form": form_sel}))
+                    if not fd.get("action"):
+                        emit(Finding("TW-AUTH-FORM-ACTION", "Brak atrybutu action w formularzu uwierzytelniania",
+                                     "Formularz logowania nie posiada atrybutu action; przeglądarki i menedżery haseł potrzebują ścieżki akcji do skojarzenia poświadczeń z usługą.",
+                                     [form_sel, n["selector"]], [vr], "normal", 0.88,
+                                     details={"form": form_sel}))
+                ac = (n.get("autocomplete") or "").lower()
+                if not ac or ac in ("off", "false"):
+                    emit(Finding("TW-AUTH-FORM-AUTOCOMPLETE", "Brak atrybutu autocomplete na polu hasła",
+                                 "Pole hasła powinno posiadać atrybut autocomplete ('current-password' lub 'new-password'), aby ułatwić zarządzanie poświadczeniami przez przeglądarkę.",
+                                 [n["selector"]], [vr], "normal", 0.85, candidate=True))
     return overlay_findings + [f.to_dict() for f in findings.values()]
 
 

@@ -200,9 +200,9 @@ def test_output_lease(tmp_path):
 
 
 def test_catalog_honest_and_unique():
-    assert CATALOG['exhaustive'] is False;rows=CATALOG['classes'];assert len(rows)==92
-    assert len({r['id'] for r in rows})==92
-    assert sum(r['automatic'] for r in rows)==18
+    assert CATALOG['exhaustive'] is False;rows=CATALOG['classes'];assert len(rows)==96
+    assert len({r['id'] for r in rows})==96
+    assert sum(r['automatic'] for r in rows)==22
 
 
 def test_root_cause_min_content_not_source_blame():

@@ -45,3 +45,36 @@ def test_legacy_snapshot_without_target_geometry_keeps_small_target_finding():
     finding=next(f for f in rules(snapshot(nodes=[node]),'mobile') if f['rule']=='TW-TARGET-SMALL')
     assert finding['details']['measurement']=='visible-fragment'
     assert finding['details']['target_size']=={'width':44,'height':12}
+
+def test_auth_form_no_parent():
+    pwd_node = dict(selector='input[type="password"]', parent='div', tag='input', inputType='password',
+                    autocomplete='current-password', formDetails=None, rect=rect(w=200, h=30), visibleRect=rect(w=200, h=30))
+    res = rules(snapshot(nodes=[pwd_node]))
+    assert any(f['rule'] == 'TW-AUTH-FORM-NO-PARENT' for f in res)
+
+def test_auth_form_method_and_action_missing():
+    pwd_node = dict(selector='input[name="password"]', parent='form', tag='input', inputType='password',
+                    autocomplete='current-password',
+                    formDetails=dict(hasForm=True, method='get', action='', selector='form[data-form="auth"]'),
+                    rect=rect(w=200, h=30), visibleRect=rect(w=200, h=30))
+    res = rules(snapshot(nodes=[pwd_node]))
+    assert any(f['rule'] == 'TW-AUTH-FORM-METHOD' for f in res)
+    assert any(f['rule'] == 'TW-AUTH-FORM-ACTION' for f in res)
+
+def test_auth_form_missing_autocomplete():
+    pwd_node = dict(selector='input[name="password"]', parent='form', tag='input', inputType='password',
+                    autocomplete='',
+                    formDetails=dict(hasForm=True, method='post', action='/api/auth/login', selector='form[data-form="auth"]'),
+                    rect=rect(w=200, h=30), visibleRect=rect(w=200, h=30))
+    res = rules(snapshot(nodes=[pwd_node]))
+    assert any(f['rule'] == 'TW-AUTH-FORM-AUTOCOMPLETE' for f in res)
+
+def test_auth_form_compliant():
+    pwd_node = dict(selector='input[name="password"]', parent='form', tag='input', inputType='password',
+                    autocomplete='current-password',
+                    formDetails=dict(hasForm=True, method='post', action='/api/auth/login', selector='form[data-form="auth"]'),
+                    rect=rect(w=200, h=30), visibleRect=rect(w=200, h=30))
+    res = rules(snapshot(nodes=[pwd_node]))
+    auth_rules = {f['rule'] for f in res if f['rule'].startswith('TW-AUTH-FORM')}
+    assert not auth_rules
+
