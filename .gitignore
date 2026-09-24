@@ -4,7 +4,7 @@
 .testwins/
 artifacts/
 baselines/
-analysis/
+/analysis/
 .venv/
 __pycache__/
 .pytest_cache/
