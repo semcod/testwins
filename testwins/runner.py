@@ -21,14 +21,9 @@ from .model import Finding, identity
 from .util import atomic_json, digest, origin, redact_url, utc_now, slug
 from . import baseline
 from .input import pointer,scroll_tile
+from .observation import layout_signature, assess_stability
 
 COLLECTOR=Path(__file__).with_name("collector.js").read_text("utf-8")
-
-
-def layout_signature(s: dict) -> str:
-    return digest([(n["selector"],*[round(n["rect"][k],1) for k in ("x","y","width","height")])
-                   for n in s["nodes"] if n["visibleRect"]["width"] and n["visibleRect"]["height"]] +
-                  [(t.get("selector"),t.get("text")) for t in s["texts"]])
 
 
 async def guard(context, cfg: dict) -> None:
@@ -59,6 +54,29 @@ async def collect(page, cdp, cfg: dict) -> dict:
         if not isinstance(data,dict):raise RuntimeError("rendered DOM collector returned no data")
         return data
     return await page.evaluate(COLLECTOR,opts)
+
+
+async def capture_observation(page, cdp, cfg: dict, *, retries=1, repeat_gap_s=0):
+    """Bound each image with fresh observations; retain the final attempt's DOM."""
+    for attempt in range(retries + 1):
+        if attempt:
+            await asyncio.sleep(0.2)
+        before = await collect(page, cdp, cfg)
+        if repeat_gap_s:
+            await asyncio.sleep(repeat_gap_s)
+        png = await page.screenshot(type='png', full_page=False, scale='css',
+                                   animations='disabled' if cfg['capture']['freeze_animations'] else 'allow')
+        snapshot = await collect(page, cdp, cfg)
+        stability = assess_stability(before, snapshot)
+        snapshot['stability'] = dict(stability, attempts=attempt + 1)
+        snapshot['stable'] = stability['layout'] and stability['state']
+        # A moving/private element can occupy either sampled location in the
+        # screenshot. Preserve both masks, including on an unsuccessful retry.
+        snapshot['masks'] = list({tuple(sorted(r.items())): r
+                                 for r in before['masks'] + snapshot['masks']}.values())
+        if snapshot['stable']:
+            break
+    return png, snapshot
 
 
 async def settle(page, cfg: dict) -> None:
@@ -204,21 +222,13 @@ async def run(cfg: dict, output: Path) -> Path:
 
     async def capture(page,cdp,bname,dname,device,version,transport,stage,repeat,extra=None):
         await settle(page,cfg)
-        before=await collect(page,cdp,cfg)
-        png=await page.screenshot(type="png",full_page=False,scale="css",animations="disabled" if cfg["capture"]["freeze_animations"] else "allow")
-        s=await collect(page,cdp,cfg)
-        stable=layout_signature(before)==layout_signature(s)
-        if not stable:
-            await asyncio.sleep(0.2)
-            png=await page.screenshot(type="png",full_page=False,scale="css",animations="disabled" if cfg["capture"]["freeze_animations"] else "allow")
-            s_retry=await collect(page,cdp,cfg)
-            if layout_signature(s)==layout_signature(s_retry):
-                s=s_retry;stable=True
-        s["stable"]=stable;s["url"]=redact_url(page.url)
+        png,s=await capture_observation(page,cdp,cfg)
+        stable=s['stable'];s["url"]=redact_url(page.url)
         s["links"]=[redact_url(x) for x in s["links"]]
         findings=detect(s,cfg,device)+(extra or [])
         if not stable:
-            s["gaps"].append({"kind":"unstable_layout","reason":"Layout moved between DOM and screenshot observations."})
+            s["gaps"].append({"kind":"unstable_layout","reason":"Geometry or detector state changed around the screenshot.",
+                              "layout_stable":s['stability']['layout'],"state_stable":s['stability']['state']})
             for f in findings:f["candidate"]=True;f["confidence"]=min(f["confidence"],.6)
         if s["truncated"]:s["gaps"].append({"kind":"capture_limit","reason":"DOM/text/HTML capture limit reached."})
         if s["fontsStatus"]!="loaded":s["gaps"].append({"kind":"fonts_pending","reason":"Fonts did not settle before capture."})
@@ -252,7 +262,7 @@ async def run(cfg: dict, output: Path) -> Path:
         if axe_data is not None:atomic_json(dest/"axe.json",axe_data)
         evidence=[str(folder/x) for x in ("viewport.png","snapshot.json","rendered.html","meta.json")]
         ss={"meta":meta,"image":evidence[0],"data":evidence[1],"html":evidence[2],
-            "annotation":str(folder/"annotated.png"),"stable":stable,"baseline":bstatus,
+            "annotation":str(folder/"annotated.png"),"stable":stable,"stability":s['stability'],"baseline":bstatus,
             "axe":axe_status,"gaps":s["gaps"],"repeat":repeat}
         from .performance import measure
         ss["performance"]=await measure(cdp,cfg["performance"])

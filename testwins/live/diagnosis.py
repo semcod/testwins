@@ -67,7 +67,7 @@ def supplementary(snapshot: dict, *, stable: bool) -> list[dict]:
     def emit(rule,title,msg,n=None,sev='normal',candidate=True):
         out.append(Finding(rule,title,msg,[n['selector']] if n else ['html'],[n['rect']] if n else [],sev,
                            .65 if candidate else .94,candidate).to_dict())
-    if not stable:emit('TW-LAYOUT-UNSTABLE','Układ zmienił się podczas pomiaru','Porównanie geometrii wokół zrzutu nie jest stabilne.')
+    if not stable:emit('TW-LAYOUT-UNSTABLE','Obserwacja zmieniła się podczas pomiaru','Geometria lub stan detektorów zmieniły się wokół zrzutu; sprawdź pola stability w dowodzie.')
     if snapshot.get('fontsStatus')!='loaded':emit('TW-FONT-PENDING','Fonty nie są gotowe','Obserwacja stanu fontów, nie diagnoza sieci.')
     visible=[n for n in snapshot.get('nodes',[]) if n['visibleRect']['width']>0 and n['visibleRect']['height']>0]
     if not snapshot.get('texts') and not any(n['tag'] in {'img','canvas','video','svg','iframe','input','button'} for n in visible):

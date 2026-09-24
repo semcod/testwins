@@ -10,7 +10,7 @@ from contextlib import AsyncExitStack
 from pathlib import Path
 from PIL import Image,ImageChops,ImageStat
 from ..browser import launch,context_options
-from ..runner import collect,settle,guard,layout_signature,paint
+from ..runner import capture_observation,settle,guard,paint
 from ..detectors import detect,from_axe
 from ..util import atomic_json,redact_url,file_digest,digest
 from ..model import Finding
@@ -90,12 +90,9 @@ class BrowserScanner:
                 result['status']='limited';result['gaps']=[{'kind':'tier_limit','reason':'L0 heartbeat only; GUI rules not evaluated'}]
                 return result
             await settle(page,t.audit)
-            before=await collect(page,cdp,t.audit)
-            await asyncio.sleep(self.cfg.repeat_gap_s)
-            png=await page.screenshot(type='png',full_page=False,scale='css',animations='disabled' if t.audit['capture']['freeze_animations'] else 'allow')
-            s=await collect(page,cdp,t.audit)
-            stable=layout_signature(before)==layout_signature(s)
-            s['stable']=stable;s['url']=redact_url(page.url);s['links']=[redact_url(u) for u in s.get('links',[])]
+            png,s=await capture_observation(page,cdp,t.audit,retries=0,repeat_gap_s=self.cfg.repeat_gap_s)
+            stable=s['stable'];result['stability']=s['stability']
+            s['url']=redact_url(page.url);s['links']=[redact_url(u) for u in s.get('links',[])]
             result['transport']=transport;result['browser_version']=(await self._browser(t))[0].version
             f=detect(s,t.audit,t.audit['devices'][t.device])+supplementary(s,stable=stable)
             # Read-only contracts: no action, shell command or generated JS from web content.
@@ -106,7 +103,8 @@ class BrowserScanner:
                 if not ok:f.append(Finding('TW-EXPECTATION','Niespełniony kontrakt obserwowanego stanu',f"Oczekiwanie {kind} nie zostało spełnione.",[e['selector']],[],e.get('severity','high'),.97,details={'kind':kind,'value':'[OPERATOR EXPECTATION]','contract_id':digest(e)[:16]}).to_dict())
             gaps=list(s.get('gaps',[]))
             if s.get('truncated'):gaps.append({'kind':'capture_limit'})
-            if not stable:gaps.append({'kind':'unstable_layout'})
+            if not stable:gaps.append({'kind':'unstable_layout','layout_stable':s['stability']['layout'],
+                                       'state_stable':s['stability']['state']})
             # DOM completeness for supported light/open-shadow surfaces. iframe/canvas gaps remain explicit.
             if not s.get('truncated') and stable and not any(g.get('kind') in {'detector_limit','alignment_contract'} for g in gaps):
                 result['covered_rules']=sorted(BASE_RULES)
