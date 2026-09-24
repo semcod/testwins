@@ -3,14 +3,14 @@
   "schema": "wellmanifest.docs/document/v1",
   "id": "ux-strategies",
   "kind": "information",
-  "version": 5,
+  "version": 6,
   "title": "Strategie UX, reakcje interfejsu i naprawy z subllm",
   "status": "implemented",
   "owner": "semcod/testwins",
   "created": "2026-09-23",
   "updated": "2026-09-24",
   "review_after": "2026-12-23",
-  "source_revision": "94fbdb5b28c301a5cf27b89a480c137b81f3998d",
+  "source_revision": "c87ff5a93953994140800f75e1e10564349748c1",
   "affected_repositories": [
     "semcod/testwins"
   ],
@@ -25,7 +25,10 @@
     "repo://semcod/testwins/tests/test_observation_browser.py",
     "repo://semcod/testwins/testwins/overlays.py",
     "repo://semcod/testwins/tests/test_overlays.py",
-    "repo://semcod/testwins/tests/test_overlays_browser.py"
+    "repo://semcod/testwins/tests/test_overlays_browser.py",
+    "repo://semcod/testwins/testwins/frames.py",
+    "repo://semcod/testwins/tests/test_frames_browser.py",
+    "repo://semcod/testwins/configs/c2004/frames.yaml"
   ]
 }
 ---
@@ -412,3 +415,86 @@ i powrót do przycisku. Wymaga wdrożenia poprawionego menu C2004; starsza aplik
 bez `aria-controls` ma otrzymać błąd, a nie automatyczne wykluczenie zasłonięć.
 
 Walidacja zakresu silnika: 308 testów jednostkowych i 56 przeglądarkowych Chromium.
+
+
+## Wersja 6: jawne wnętrza iframe (PLF-007)
+
+Konfiguracja wybiera ramkę, scenariusz włącza ją do obserwacji, a krok wskazuje
+kontekst swoich selektorów i asercji:
+
+```yaml
+frames:
+  - id: guide
+    selector: iframe.connect-help-frame
+journeys:
+  - id: guide
+    path: /connect-help-oql-poradnik?lang=pl
+    frames: [guide]
+    steps:
+      - id: commands
+        frame: guide
+        action: click
+        selector: '.toc a[href="#commands"]'
+        allow_mutation: true
+        expect:
+          kind: url
+          value: '#commands$'
+```
+
+Obsługiwany jest jeden poziom iframe tej samej domeny, z jednoznacznym
+selektorem, załadowanym dokumentem, bez transformacji i w pełni widoczny
+w oknie nadrzędnym. Maksymalnie osiem definicji. Lista `allowed_origins`
+zezwala na żądania sieciowe, ale nie rozszerza uprawnień odczytu wnętrza ramek.
+Ramki z obcej domeny, nieprzezroczyste sandboxy, ramki prywatne, zasłonięte,
+przycięte, przemieszczające się podczas zrzutu i brakujące otrzymują
+`frame_unavailable`. Zagnieżdżone iframe wybranego dokumentu pozostają
+zamaskowane z luką `frame_nested`. Obie luki blokują zaliczenie wybranego
+zakresu. Pozostałe niewybrane iframe nadal mają jawną lukę informacyjną.
+
+Migawka rodzica zawsze maskuje piksele ramek, także po przekroczeniu limitu
+obserwowanych elementów. Osobny zrzut wnętrza maskuje jego pola prywatne
+według `capture.mask_selectors`. Skrypt nie zapisuje surowego obrazu przed
+maskowaniem. Dowody dziecka znajdują się w podkatalogu `frames/<id>` i mają
+`scope.kind: frame`, identyfikator, selektor oraz prostokąt w rodzicu.
+Prostokąty detektorów i anotacje pozostają w lokalnych współrzędnych iframe.
+Geometria osadzenia uczestniczy w ocenie stabilności; identyfikatory etapów
+odróżniają identyczne selektory w rodzicu i dziecku.
+
+Kliknięcie, dotyk, klawiatura, wypełnianie i wybór używają wejścia Playwright
+w obrębie wybranego Frame. Nie wysyłają lokalnych współrzędnych do sesji CDP
+rodzica ani nie wywołują aplikacyjnego `element.click()`. Asercje selektorów
+oraz URL dotyczą tego samego dokumentu. `goto`, pobieranie plików i kontrakty
+czasowe `ux` wewnątrz ramek pozostają nieobsługiwane i są odrzucane już przy
+walidacji konfiguracji. Pomiar CDP wydajności dotyczy rodzica; kontrakty
+nakładek i wyrównania z rodzica nie są automatycznie przenoszone do dziecka.
+Axe bada każdą wybraną powierzchnię oddzielnie, bez rekurencji do innych ramek.
+
+To ograniczona obserwacja aktualnego viewportu iframe, a nie pełne przejście
+całej jego przewijanej treści. Ocena zasłonięcia osadzenia korzysta z pięciu
+punktów hit-test; nie jest analizą wszystkich pikseli i efektów kompozytora.
+Kompletność skonfigurowanego zakresu nie oznacza poprawności całej aplikacji.
+
+Gotowy scenariusz C2004: `configs/c2004/frames.yaml`. Audyt czterech tras
+`configs/c2004/audit.yaml` również wybiera ramkę przewodnika. Dla DisplayNet
+należy podać `--url` z aktualnie zweryfikowanym adresem wdrożenia.
+
+
+Weryfikacja PLF-007: 318 testów jednostkowych bez pominięć; 22 testy wybranego
+zakresu ramek, w tym wejście myszy i dotyku, osobne współrzędne, prywatne dane,
+obca domena, sandbox, niejednoznaczny selektor, zagnieżdżenia i limit DOM.
+Pełny przebieg przeglądarkowy: 67 zaliczonych, jeden błąd istniejącego testu
+obserwatora live; jego osobne powtórzenie przeszło. Wynik CI dla publikowanego
+commita pozostaje osobnym dowodem.
+
+Pierwsze rzeczywiste przebiegi C2004 (`2026-09-24T113609-698Z-ce1fab12` lokalnie,
+`2026-09-24T113815-665Z-199dc45a` na DisplayNet) wykonały po 4/4 kroków desktopu.
+Oba potwierdziły `TW-TEXT-OVERLAP` w ramce po przejściu do `#commands`:
+przyklejony pasek „Drukuj / zapisz do PDF” zakrywa nagłówek. Przecięcie wynosi
+174,72 × 9,30 px; dowody z dwóch powtórzeń są stabilne, a obraz potwierdza
+zasłonięcie. Jest to znalezisko aplikacji, nie powód do wyłączenia detektora.
+
+Tablet i telefon otrzymały brak pokrycia z powodu częściowo przyciętego
+osadzenia, którego ta wersja nie interpretuje jako pełnej powierzchni iframe.
+Raporty pozostają `incomplete`. Także początkowe ładowanie ramki zachowano
+w pierwszych dowodach; finalny runner czeka na gotowość rodzica przed próbą
+obserwacji dziecka. Nie zmieniono kodu ani wdrożenia C2004 w PLF-007.

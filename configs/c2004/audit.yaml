@@ -18,6 +18,9 @@ capture:
   ready_selector: .lang-trigger
 rules:
   heuristic_alignment: false
+frames:
+- id: guide
+  selector: iframe.connect-help-frame
 allowed_origins: []
 routes:
 - id: users
@@ -27,4 +30,5 @@ routes:
 - id: reports
   path: /connect-reports/week?filter=all&lang=pl
 - id: guide
+  frames: [guide]
   path: /connect-help-oql-poradnik?lang=pl

@@ -38,7 +38,7 @@ DEFAULT = {
     "baseline": {"directory": None, "threshold": 0.005, "color_delta": 24,
                  "fail_on_difference": False},
     "crawl": {"enabled": False, "allow_paths": [], "max_pages": 5},
-    "suppressions": [], "overlays": [],
+    "suppressions": [], "overlays": [], "frames": [],
 }
 
 
@@ -84,7 +84,7 @@ def validate(cfg: dict) -> dict:
     for kind in ("routes", "journeys"):
         if not isinstance(cfg[kind], list): raise ValueError(f"{kind} must be a list")
         for item in cfg[kind]:
-            closed(item, {"id", "path", "steps", "session", "setup_path"} if kind == "journeys" else {"id", "path", "session", "setup_path"}, kind)
+            closed(item, {"id", "path", "steps", "session", "setup_path", "frames"} if kind == "journeys" else {"id", "path", "session", "setup_path", "frames"}, kind)
             if item.get("session") is not None and item["session"] not in cfg["sessions"]:
                 raise ValueError("Unknown scene session")
             if item.get("setup_path") is not None and origin(urljoin(cfg["base_url"], item["setup_path"])) != base:
@@ -99,7 +99,7 @@ def validate(cfg: dict) -> dict:
             if len(steps) > 100: raise ValueError("journey is too long")
             step_ids = set()
             for s in steps:
-                closed(s, {"id","action","selector","value","key","expect","allow_mutation","ux"}, "step")
+                closed(s, {"id","action","selector","value","key","expect","allow_mutation","ux","frame"}, "step")
                 if not re.fullmatch(r"[a-z][a-z0-9_-]{0,63}", s["id"]) or s["id"] in step_ids:
                     raise ValueError("invalid or duplicated step id")
                 step_ids.add(s["id"])
@@ -154,6 +154,8 @@ def validate(cfg: dict) -> dict:
         date.fromisoformat(str(s["expires"]))
     from .overlays import validate_overlays
     validate_overlays(cfg)
+    from .frames import validate_frames
+    validate_frames(cfg)
     from .ux import validate_ux
     validate_ux(cfg)
     return cfg
