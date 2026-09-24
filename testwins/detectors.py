@@ -86,11 +86,15 @@ def detect(snapshot: dict, cfg: dict, device: dict) -> list[dict]:
             emit(Finding("TW-CONTROL-OCCLUDED","Kontrolka zasłonięta dla kliknięcia",
                          f"Test trafienia wskazał obcy element w {n['occluded']}/{n['hitSamples']} próbek.",
                          [n["selector"]],[vr],"high",.94,details={"covering":n["covering"]}))
-        if device["touch"] and (vr["width"]<rules["target_px"] or vr["height"]<rules["target_px"]):
+        target_size=n.get("targetSize") or vr
+        if device["touch"] and (target_size["width"]<rules["target_px"] or target_size["height"]<rules["target_px"]):
             if n["tag"]=="a" and n["display"]=="inline": continue
             emit(Finding("TW-TARGET-SMALL","Mały cel dotykowy — do oceny",
                          "Cel jest mniejszy niż skonfigurowany próg. Reguła nie rozstrzyga wyjątków odstępu ani równoważnych kontrolek.",
-                         [n["selector"]],[vr],"low",.60,True))
+                         [n["selector"]],[vr],"low",.60,True,
+                         details={"target_size":{"width":target_size["width"],"height":target_size["height"]},
+                                  "visible_size":{"width":vr["width"],"height":vr["height"]},
+                                  "measurement":"scroll-aware" if n.get("targetSize") else "visible-fragment"}))
     for a in snapshot.get("alignments",[]):
         nodes=a["nodes"]
         if len(nodes)<2:

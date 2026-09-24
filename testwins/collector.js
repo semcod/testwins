@@ -35,6 +35,41 @@
   }return false;};
   const hit=(x,y)=>{let e=document.elementFromPoint(x+ox,y+oy),old=null;
     while(e && e!==old && e.shadowRoot){old=e;e=e.shadowRoot.elementFromPoint(x+ox,y+oy)||e;}return e;};
+  // Size potentially exposed by existing scroll ranges, without scrolling the app.
+  // Hard clips still constrain the target; a scroll port smaller than the target
+  // remains a limit. Hit testing continues to use only the current visibleRect.
+  const targetSize=(r,clips)=>{
+    const measure=(axis,dimension)=>{
+      let start=r[axis],end=start+r[dimension],size=r[dimension];
+      for(const c of clips){
+        const pos=c.rect[axis],length=c.rect[dimension],overflow=c[axis];
+        if(!['hidden','clip','auto','scroll'].includes(overflow))continue;
+        const range=c.range[axis];
+        if(['auto','scroll'].includes(overflow)&&range>0){
+          const offset=c.offset[axis],rtl=axis==='x'&&c.rtl;
+          const low=rtl?offset:offset-range,high=rtl?offset+range:offset;
+          const shift=Math.max(low,Math.min(high,pos-start));
+          size=Math.min(size,Math.max(0,Math.min(end+shift,pos+length)-Math.max(start+shift,pos)));
+          // Retain only reachable positions for any outer clip/scroll port.
+          start=Math.max(start+low,pos);end=Math.min(end+high,pos+length);
+        }else{
+          start=Math.max(start,pos);end=Math.min(end,pos+length);
+          size=Math.min(size,Math.max(0,end-start));
+        }
+      }
+      return size;
+    };
+    return {width:measure('x','width'),height:measure('y','height')};
+  };
+  const scroller=document.scrollingElement,rootStyle=getComputedStyle(document.documentElement);
+  const bodyStyle=document.body?getComputedStyle(document.body):rootStyle;
+  const pageClip={rect:vp,x:'clip',y:'clip',range:{x:0,y:0},offset:{x:scrollX,y:scrollY},rtl:rootStyle.direction==='rtl'};
+  for(const [axis,dimension] of [['x','Width'],['y','Height']]){
+    const prop=axis==='x'?'overflowX':'overflowY';
+    if(scroller&&!['hidden','clip'].includes(rootStyle[prop])&&!['hidden','clip'].includes(bodyStyle[prop])){
+      pageClip[axis]='auto';pageClip.range[axis]=Math.max(0,scroller['scroll'+dimension]-scroller['client'+dimension]);
+    }
+  }
   for(let ri=0;ri<roots.length;ri++) {
     const root=roots[ri];
     for(const el of root.querySelectorAll('*')) {
@@ -44,10 +79,14 @@
       if(nodes.length>=opts.max_elements){truncated=true;break;}
       const cs=getComputedStyle(el), r=rect(el.getBoundingClientRect());
       if(cs.display==='none'||cs.visibility!=='visible'||+cs.opacity===0||r.width<=0||r.height<=0)continue;
+      const interactive=el.matches('button,a[href],input:not([type=hidden]),select,textarea,[role=button],[role=link],[tabindex]');
       let hidden=false, clip={...vp}, intentional=false;
+      let stationary=['fixed','sticky'].includes(cs.position)||cs.transform!=='none';
+      const targetClips=[];
       const ancestors=[];
       for(let p=parent(el);p;p=parent(p)){
         const pc=getComputedStyle(p);ancestors.push(path(p));
+        stationary ||= ['fixed','sticky'].includes(pc.position)||pc.transform!=='none';
         if(+pc.opacity===0||pc.visibility!=='visible'||pc.contentVisibility==='hidden'){hidden=true;break;}
         // Closed <details> can expose descendant Range rects that are not painted.
         // Only its first summary subtree remains rendered; never diagnose hidden answers.
@@ -57,6 +96,9 @@
         }
         const pr=rect(p.getBoundingClientRect());
         const c={x:pr.x+p.clientLeft,y:pr.y+p.clientTop,width:p.clientWidth,height:p.clientHeight};
+        if(interactive&&p!==scroller)targetClips.push({rect:c,x:pc.overflowX,y:pc.overflowY,
+          range:{x:Math.max(0,p.scrollWidth-p.clientWidth),y:Math.max(0,p.scrollHeight-p.clientHeight)},
+          offset:{x:p.scrollLeft,y:p.scrollTop},rtl:pc.direction==='rtl'});
         if(['hidden','clip','scroll','auto'].includes(pc.overflowX)){
           const next=intersect(clip,{x:c.x,y:clip.y,width:c.width,height:clip.height});clip.x=next.x;clip.width=next.width;
         }
@@ -67,8 +109,8 @@
       }
       if(hidden)continue;
       const privateNode=isPrivate(el), visibleRect=intersect(r,clip), selector=path(el);
-      const interactive=el.matches('button,a[href],input:not([type=hidden]),select,textarea,[role=button],[role=link],[tabindex]');
       const n={selector,parent:path(parent(el)),ancestors,tag:el.localName,rect:r,visibleRect,
+        targetSize:interactive&&!stationary?targetSize(r,[...targetClips,pageClip]):null,
         display:cs.display,position:cs.position,transform:cs.transform,overflowX:cs.overflowX,overflowY:cs.overflowY,
         clientWidth:el.clientWidth,clientHeight:el.clientHeight,scrollWidth:el.scrollWidth,scrollHeight:el.scrollHeight,
         textOverflow:cs.textOverflow,lineClamp:cs.webkitLineClamp,interactive,

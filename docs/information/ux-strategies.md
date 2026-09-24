@@ -3,14 +3,14 @@
   "schema": "wellmanifest.docs/document/v1",
   "id": "ux-strategies",
   "kind": "information",
-  "version": 2,
+  "version": 3,
   "title": "Strategie UX, reakcje interfejsu i naprawy z subllm",
   "status": "implemented",
   "owner": "semcod/testwins",
   "created": "2026-09-23",
-  "updated": "2026-09-23",
+  "updated": "2026-09-24",
   "review_after": "2026-12-23",
-  "source_revision": "4ebfe800c66c27b5bcd47f07c44ebc802b02182a",
+  "source_revision": "60aaccd5bedba3cc46e10ca89aafec2839bd2ade",
   "affected_repositories": [
     "semcod/testwins"
   ],
@@ -19,7 +19,8 @@
     "repo://semcod/testwins/tests/test_ux_browser.py",
     "repo://semcod/testwins/testwins/ux.py",
     "repo://semcod/testwins/testwins/ux_probe.js",
-    "repo://semcod/testwins/testwins/ux_review.py"
+    "repo://semcod/testwins/testwins/ux_review.py",
+    "repo://semcod/testwins/tests/test_target_geometry_browser.py"
   ]
 }
 ---
@@ -237,3 +238,61 @@ Chroniony preflight nadal zwraca `PUBLICATION_PROFILE_MISSING`; watchdog
 publikacji również klasyfikuje PR #2 jako `unregistered`. Wymagane jest
 niezależne przyjęcie profilu, a następnie walidacja dokładnego HEAD i wyniku
 scalenia. Lokalny sukces testów nie usuwa tej blokady (kontynuacja PLF-003).
+
+### Geometria celów dotykowych: wersja 3
+
+Publikację wersji 2 zakończono 2026-09-24: niezależny Validator scalił
+[profil #582](https://github.com/subactor/validator-agent/pull/582) i
+[Testwins #2](https://github.com/semcod/testwins/pull/2). Profil wymaga
+`unit` i `browser`; zastosowano go w osobnym wywołaniu z przypiętym hashem.
+Nie oznacza to wdrożenia aplikacji ani usunięcia luk w audycie.
+
+PLF-004 poprawia `TW-TARGET-SMALL`. Poprzednio próg porównywano z aktualnie
+widocznym fragmentem: przycisk o wysokości 28 px przy krawędzi przewijanego
+menu mógł mieć widoczne 15 px i zostać zgłoszony jako mały. Kolektor zapisuje
+teraz `targetSize`: rozmiar ograniczony przez geometrię kontrolki, istniejące
+zakresy przewijania oraz obszary przycinania. Pomiar nie przewija dokumentu.
+Uwzględnia obie osie, bieżące przesunięcie i poziomy kierunek RTL.
+
+Małe przyciski, trwałe przycięcie `hidden`/`clip`, nieosiągalna ujemna pozycja
+oraz zbyt małe okno przewijania nadal dają kandydata. Elementy `fixed`,
+`sticky` lub transformowane, także przez przodka, zachowują ostrożny pomiar
+widocznego fragmentu. Starsze zrzuty bez `targetSize` również zachowują
+dotychczasowe zachowanie. Szczegóły zgłoszenia zawierają `target_size`,
+`visible_size` i metodę pomiaru. Test trafienia oraz prostokąty dowodów nadal
+dotyczą aktualnie widocznego obszaru; większy wymiar nie unieważnia zasłonięcia.
+
+To oszacowanie geometrii, nie dowód osiągalności każdej pozycji po przewinięciu:
+scroll-snap, skrypty przechwytujące gesty i zmiana układu po przewinięciu
+wymagają osobnych podróży. Reguła nadal nie ocenia wyjątków odstępu między
+celami ani kompletnej zgodności WCAG. Otwarte menu może celowo zakrywać
+kontrolki pod nim; sam poprawny rozmiar nie usuwa takich zgłoszeń.
+
+Przypadki renderera obejmują przewijanie pionowe i poziome, dokument,
+zagnieżdżone przycinanie, małe okno przewijania, rzeczywiście mały przycisk,
+pozycję `fixed`, ujemne przepełnienie, już przewinięte panele i RTL.
+Negatywne przypadki sprawdzają również zachowanie wykrywania zasłonięcia.
+Aktualny audyt c2004 jest kontynuacją jego napraw PLF-2545/2546;
+historyczne 61 naruszeń nie opisuje już aktualnego frontendu.
+
+Weryfikacja 2026-09-24: 281 testów jednostkowych i 33 przeglądarkowe przeszły.
+Wśród nich jest 14 przypadków nowej geometrii; cztery scenariusze przewijania
+odtworzyły błąd przed poprawką. C2004 obserwowano lokalnie na porcie 8100,
+bez własnych zmian kodu aplikacji i bez nowych wykluczeń. Checkout na starcie
+miał `38fd71687650f7250c4f59837f14d78ddaf00a6c`, a przy zakończeniu
+`606760685aded23858ebd7ec0d3cda47ef1b3f30`: cudze commity zmieniły dokumentację
+sprzętu i lock kontraktu, bez zmian frontendu. We wszystkich pięciu usuniętych
+zgłoszeniach geometria pozostała taka sama: pełne 370×28 px, widoczne 370×15 px.
+
+| Przebieg C2004 | Kroki zaliczone | Kandydaci | Potwierdzone |
+|---|---|---|---|
+| Przed: menu myszą/dotykiem | 12/12 | 15, w tym 5 małych celów | 0 |
+| Po: menu myszą/dotykiem | 12/12 | 10, wszystkie zasłonięcia | 0 |
+| Po: menu klawiaturą | 4/4 | 2 zasłonięcia | 0 |
+
+Identyfikatory raportów: `2026-09-24T072635-051Z-def310d5` (przed),
+`2026-09-24T073303-277Z-5992bffe` (po),
+`2026-09-24T073527-976Z-3c31d9ff` (klawiatura).
+Wszystkie bramki tych przebiegów nadal mają status `incomplete` z powodu
+niestabilnych obserwacji. Nie dodano pokrycia wnętrza iframe ani automatycznego
+rozstrzygania, czy zakrycie tła przez menu jest zamierzone.
