@@ -80,6 +80,7 @@ def detect(snapshot: dict, cfg: dict, device: dict) -> list[dict]:
         if comparisons>budget:
             snapshot["gaps"].append({"kind":"detector_limit","reason":"Text-pair comparison budget exceeded."});break
     for n in snapshot["nodes"]:
+        if n.get("fullyClipped"): continue
         vr=n["visibleRect"]
         if not area(vr): continue
         if n.get("brokenImage"):
@@ -117,7 +118,7 @@ def detect(snapshot: dict, cfg: dict, device: dict) -> list[dict]:
     if rules["heuristic_alignment"]:
         groups=defaultdict(list)
         for n in snapshot["nodes"]:
-            if n["tag"] not in ("html","body","span","br") and area(n["visibleRect"]): groups[n["parent"]].append(n)
+            if not n.get("fullyClipped") and n["tag"] not in ("html","body","span","br") and area(n["visibleRect"]): groups[n["parent"]].append(n)
         for group in groups.values():
             if not 3<=len(group)<=20: continue
             xs=[n["rect"]["x"] for n in group]; widths=[n["rect"]["width"] for n in group]

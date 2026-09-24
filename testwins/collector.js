@@ -13,6 +13,24 @@
   const contains = (a,b) => {for(let e=b;e;e=parent(e)) if(e===a) return true; return false;};
   const pathCache = new WeakMap();
   const observedElements = new Map(), hitElements = new WeakMap(), textElements = [];
+  // A percentage inset whose opposite sides meet has no painted area, even
+  // though DOM Range still returns text rectangles (common for live regions).
+  // Only prove this for simple percentages/zero. Partial or unsupported shapes
+  // remain observed; class names and ARIA roles are not visibility evidence.
+  const emptyInsets = new Map();
+  const emptyInset = value => {
+    if(emptyInsets.has(value))return emptyInsets.get(value);
+    const match=/^inset\(([^()]*)\)(?:\s+(?:border|padding|content|margin|fill|stroke|view)-box)?$/.exec(value);
+    const parts=match?.[1].split(/\s+round\s+/)[0].trim().split(/\s+/) || [];
+    const values=parts.map(v=>/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)%$/.test(v)?parseFloat(v):
+      /^[+-]?0(?:\.0+)?(?:px)?$/.test(v)?0:NaN);
+    let empty=false;
+    if(values.length>=1&&values.length<=4&&values.every(Number.isFinite)){
+      const [top,right=top,bottom=top,left=right]=values;
+      empty=top+bottom>=100||left+right>=100;
+    }
+    emptyInsets.set(value,empty);return empty;
+  };
   let fragmentTarget=null;
   try {fragmentTarget=document.getElementById(decodeURIComponent(location.hash.slice(1)));} catch {}
   const path = el => {
@@ -83,12 +101,13 @@
       const cs=getComputedStyle(el), r=rect(el.getBoundingClientRect());
       if(cs.display==='none'||cs.visibility!=='visible'||+cs.opacity===0||r.width<=0||r.height<=0)continue;
       const interactive=el.matches('button,a[href],input:not([type=hidden]),select,textarea,[role=button],[role=link],[tabindex]');
-      let hidden=false, clip={...vp}, intentional=false;
+      let hidden=false, clip={...vp}, intentional=false, fullyClipped=emptyInset(cs.clipPath);
       let stationary=['fixed','sticky'].includes(cs.position)||cs.transform!=='none';
       const targetClips=[];
       const ancestors=[];
       for(let p=parent(el);p;p=parent(p)){
         const pc=getComputedStyle(p);ancestors.push(path(p));
+        fullyClipped ||= emptyInset(pc.clipPath);
         stationary ||= ['fixed','sticky'].includes(pc.position)||pc.transform!=='none';
         if(+pc.opacity===0||pc.visibility!=='visible'||pc.contentVisibility==='hidden'){hidden=true;break;}
         // Closed <details> can expose descendant Range rects that are not painted.
@@ -117,7 +136,7 @@
         display:cs.display,position:cs.position,transform:cs.transform,overflowX:cs.overflowX,overflowY:cs.overflowY,
         clientWidth:el.clientWidth,clientHeight:el.clientHeight,scrollWidth:el.scrollWidth,scrollHeight:el.scrollHeight,
         textOverflow:cs.textOverflow,lineClamp:cs.webkitLineClamp,interactive,
-        private:privateNode,disabled:!!el.disabled,inert:el.closest('[inert]')!==null,
+        private:privateNode,disabled:!!el.disabled,inert:el.closest('[inert]')!==null,fullyClipped,
         fontSize:parseFloat(cs.fontSize),alignItems:cs.alignItems,flexDirection:cs.flexDirection,
         role:el.getAttribute('role'),name:privateNode?'[REDACTED]':(el.getAttribute('aria-label')||el.getAttribute('alt')||'').slice(0,160),
         brokenImage:el instanceof HTMLImageElement && !!el.currentSrc && el.complete && el.naturalWidth===0,
@@ -137,7 +156,7 @@
           selector:el.form?path(el.form):null
         }:null),
         css:Object.fromEntries(['minWidth','maxWidth','minHeight','maxHeight','boxSizing','whiteSpace','overflowWrap',
-        'wordBreak','lineHeight','fontFamily','zIndex','opacity','transform','pointerEvents','isolation',
+        'wordBreak','lineHeight','fontFamily','zIndex','opacity','transform','clipPath','pointerEvents','isolation',
         'flexShrink','flexGrow','gap','marginTop','marginRight','marginBottom','marginLeft',
         'paddingTop','paddingRight','paddingBottom','paddingLeft','color','backgroundColor'].map(k=>[k,cs[k]]))};
       observedElements.set(el,n);hitElements.set(el,[]);
@@ -159,7 +178,9 @@
       if(el.localName==='canvas'&&visibleRect.width>0&&visibleRect.height>0)
         gaps.push({kind:'canvas',selector,reason:'Canvas contents require screenshot interpretation or explicit UI assertions.'});
       nodes.push(n);
-      if(privateNode)continue;
+      if(fullyClipped&&n.focused&&!n.disabled&&!n.inert)
+        gaps.push({kind:'focused_clipped_control',selector,reason:'Focused content has an empty CSS clip path; visual focus cannot be observed.'});
+      if(privateNode||fullyClipped)continue;
       let protectedFromSticky=fragmentTarget!==null&&contains(fragmentTarget,el);
       for(let e=el;e;e=parent(e)){
         if(e.matches('h1,h2,h3,h4,h5,h6,[role=heading],button,a,input,select,textarea,summary,label,[role=button],[role=link],[role=checkbox],[role=tab],[role=menuitem],[tabindex],[contenteditable],:target,:focus')){
@@ -278,7 +299,7 @@
     const unique=selector=>{const matches=document.querySelectorAll(selector);
       if(matches.length!==1)throw new Error('Trigger and overlay selectors must each match exactly one element');
       return matches[0];};
-    const visible=el=>{const n=observedElements.get(el);return !!n&&n.visibleRect.width>0&&n.visibleRect.height>0;};
+    const visible=el=>{const n=observedElements.get(el);return !!n&&!n.fullyClipped&&n.visibleRect.width>0&&n.visibleRect.height>0;};
     try{
       const trigger=unique(contract.trigger),overlay=unique(contract.overlay),tn=observedElements.get(trigger);
       result.trigger=path(trigger);result.overlay=path(overlay);
@@ -318,7 +339,8 @@
     return result;
   });
   const alignments=opts.alignment.map(a=>({id:a.id,edge:a.edge,tolerance:a.tolerance_px,
-    nodes:Array.from(document.querySelectorAll(a.selector)).map(el=>({selector:path(el),rect:rect(el.getBoundingClientRect())})).filter(n=>n.rect.width&&n.rect.height)}));
+    nodes:Array.from(document.querySelectorAll(a.selector)).filter(el=>!observedElements.get(el)?.fullyClipped)
+      .map(el=>({selector:path(el),rect:rect(el.getBoundingClientRect())})).filter(n=>n.rect.width&&n.rect.height)}));
   const clone=document.documentElement.cloneNode(true);
   // A non-executable semantic serialization, not original HTML/JS source.
   for(const el of clone.querySelectorAll('script,style,link,iframe,object,embed,base,meta,template')) el.remove();
