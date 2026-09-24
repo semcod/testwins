@@ -21,3 +21,8 @@ dist/
 build/
 .idea/
 *.py[cod]
+
+/.worktrees/
+/.subactor/leases/
+/.subactor/recovery/
+/.planfile/

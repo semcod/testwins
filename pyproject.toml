@@ -26,6 +26,7 @@ dependencies = [
 testql = ["testql>=1.2.66,<2"]
 live = ["psutil>=5.9,<8"]
 llm = ["litellm>=1.74,<2"]
+subllm = ["subactor-subllm>=1.14,<2"]
 cv = ["opencv-python-headless>=4.10,<5", "numpy>=1.26,<3"]
 yolo = ["ultralytics>=8.3,<9"]
 desktop = ["mss>=9,<11", "pyautogui>=0.9.54,<1"]

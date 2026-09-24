@@ -11,7 +11,7 @@ def identity(row: dict) -> tuple:
 
 
 def plan_checks(cfg: dict, scenes: list[dict], cells: list[str]) -> list[dict]:
-    return [dict(cell=cell,repeat=repeat,scene=scene['id'],step=step['id'])
+    return [dict(cell=cell,repeat=repeat,scene=scene['id'],step=step['id'], **({'ux_required': True} if 'ux' in step else {}))
             for cell in cells for repeat in range(1,cfg['capture']['repeats']+1)
             for scene in scenes for step in scene.get('steps',[])]
 
@@ -30,6 +30,12 @@ def evaluate(report: dict) -> dict:
     except (KeyError,TypeError):incomplete.append('invalid_check_identity')
     if any(c.get('status') not in ('passed','failed') for c in checks):incomplete.append('blocked_or_unexecuted_required_check')
     if counts['failed']:failures.append('required_assertion_failed')
+    ux_expected = {tuple(c.get(k) for k in KEYS) for c in plan if c.get('ux_required') and all(type(c.get(k)) in (str, int) for k in KEYS)}
+    for c in checks:
+        if all(type(c.get(k)) in (str, int) for k in KEYS) and tuple(c.get(k) for k in KEYS) in ux_expected:
+            status = c.get('ux', {}).get('status')
+            if status not in ('passed', 'failed'): incomplete.append('ux_not_observed')
+            if status == 'failed': failures.append('ux_contract_failed')
     cells=report.get('cells',[])
     cell_plan=report.get('cell_plan')
     if not cells or not isinstance(cell_plan,list) or not cell_plan:incomplete.append('missing_cell_plan_or_execution')

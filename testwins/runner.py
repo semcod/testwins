@@ -176,6 +176,7 @@ async def run(cfg: dict, output: Path) -> Path:
         for step in journey["steps"]:
             if "value" in step:step["value"]="[REDACTED]"
             if "value" in step.get("expect",{}):step["expect"]["value"]="[OPERATOR EXPECTATION]"
+            if "value" in step.get("ux", {}).get("feedback", {}):step["ux"]["feedback"]["value"]="[OPERATOR EXPECTATION]"
     public_cfg["sessions"]={k:{"storage_state":"[PRIVATE LOCAL FILE]"} for k in cfg["sessions"]}
     public_cfg["base_url"]=redact_url(public_cfg["base_url"])
     public_cfg["cdp_endpoints"]={k:"[OPERATOR ENDPOINT]" for k in cfg["cdp_endpoints"]}
@@ -204,10 +205,15 @@ async def run(cfg: dict, output: Path) -> Path:
     async def capture(page,cdp,bname,dname,device,version,transport,stage,repeat,extra=None):
         await settle(page,cfg)
         before=await collect(page,cdp,cfg)
-        # Playwright screenshot uses the connected transport (CDP for Chromium-based browsers).
         png=await page.screenshot(type="png",full_page=False,scale="css",animations="disabled" if cfg["capture"]["freeze_animations"] else "allow")
         s=await collect(page,cdp,cfg)
         stable=layout_signature(before)==layout_signature(s)
+        if not stable:
+            await asyncio.sleep(0.2)
+            png=await page.screenshot(type="png",full_page=False,scale="css",animations="disabled" if cfg["capture"]["freeze_animations"] else "allow")
+            s_retry=await collect(page,cdp,cfg)
+            if layout_signature(s)==layout_signature(s_retry):
+                s=s_retry;stable=True
         s["stable"]=stable;s["url"]=redact_url(page.url)
         s["links"]=[redact_url(x) for x in s["links"]]
         findings=detect(s,cfg,device)+(extra or [])
@@ -281,6 +287,7 @@ async def run(cfg: dict, output: Path) -> Path:
                     await page.goto(urljoin(cfg["base_url"],scene["path"]),wait_until="domcontentloaded")
                     if cfg["capture"]["freeze_animations"]:
                         await page.add_style_tag(content="*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important;scroll-behavior:auto!important}")
+                        await page.evaluate("() => { if(!window.__tw_instant){window.__tw_instant=true;const orig=Element.prototype.scrollIntoView;Element.prototype.scrollIntoView=function(a){if(a&&typeof a==='object'&&a.behavior==='smooth')a=Object.assign({},a,{behavior:'instant'});return orig.call(this,a);};} }")
                     await capture(page,cdp,bname,dname,device,version,transport,scene["id"]+"--initial",repeat)
                     cell["observed_scenes"]+=1
                     if not scene.get("steps"):
@@ -298,10 +305,18 @@ async def run(cfg: dict, output: Path) -> Path:
                             await capture(page,cdp,bname,dname,device,version,transport,scene["id"]+"--"+step["id"]+"--before",repeat)
                             check["before"]=snapshots[-1]["image"]
                         previous=await page.locator("body").inner_text() if step["expect"]["kind"]=="changed" else ""
+                        from . import ux
+                        ux_spec = ux.contract(cfg, step)
+                        if cfg.get("ux", {}).get("strategy"):
+                            await page.wait_for_timeout(ux.HABITS[cfg["ux"]["habit"]]["think_ms"])
                         error=[];action_completed=False
+                        ux_started=False
                         try:
                             action=dict(step)
                             if action["action"]=="goto":action["value"]=urljoin(cfg["base_url"],action["value"])
+                            if ux_spec:
+                                await ux.start(page, step, ux_spec)
+                                ux_started=True
                             if step["action"]=="download":
                                 from .downloads import inspect_download
                                 async with page.expect_download(timeout=cfg["capture"]["timeout_ms"]) as pending:
@@ -323,10 +338,23 @@ async def run(cfg: dict, output: Path) -> Path:
                                   f"Scenariusz {scene['id']}, krok {step['id']}: działanie lub jawna asercja UI nie powiodły się.",
                                   [step.get("selector") or step["expect"].get("selector","page")],[],"high",.99,
                                   not action_completed or step["expect"]["kind"]=="changed",{"action":step["action"],"action_completed":action_completed,"expectation_kind":step["expect"]["kind"]}).to_dict()]
+                        if ux_spec:
+                            try:
+                                check["ux"] = await ux.finish(page, ux_spec, check["status"] == "passed") if ux_started else ux.incomplete(ux_spec, "probe_not_started")
+                            except Exception:
+                                check["ux"] = ux.incomplete(ux_spec, "probe_failed")
+                            if check["ux"]["status"] == "incomplete":
+                                check["status"] = "blocked"; failed = True
+                            elif check["ux"]["status"] == "failed":
+                                check["status"] = "failed"; failed = True
+                            error += ux.findings(check["ux"])
+                            location = Path("evidence")/cell["id"]/f"r{repeat}"/slug(scene["id"]+"--"+step["id"])/"ux.json"
+                            atomic_json(root/location, check["ux"])
+                            check["ux_evidence"] = str(location)
                         await capture(page,cdp,bname,dname,device,version,transport,scene["id"]+"--"+step["id"],repeat,error)
                         check["after"]=snapshots[-1]["image"]
                 except Exception as exc:
-                    cell["errors"].append({"scene":scene["id"],"repeat":repeat,"exception_type":type(exc).__name__,"code":"TW-CAPTURE-FAILED"})
+                    cell["errors"].append({"scene":scene["id"],"repeat":repeat,"exception_type":type(exc).__name__,"message":str(exc),"code":"TW-CAPTURE-FAILED"})
                 finally:
                     if context:await context.close()
 
@@ -342,9 +370,9 @@ async def run(cfg: dict, output: Path) -> Path:
                 for dname,device,cell in local:
                     cell["version"]=browser.version
                     try:await asyncio.wait_for(run_cell(browser,bname,dname,device,browser.version,transport,cell),cfg["capture"]["max_cell_seconds"])
-                    except Exception as e:cell["errors"].append({"code":"TW-CELL-FAILED","exception_type":type(e).__name__})
+                    except Exception as e:cell["errors"].append({"code":"TW-CELL-FAILED","exception_type":type(e).__name__,"message":str(e)})
         except Exception as e:
-            for _,_,cell in local:cell["errors"].append({"code":"TW-BROWSER-UNAVAILABLE","exception_type":type(e).__name__})
+            for _,_,cell in local:cell["errors"].append({"code":"TW-BROWSER-UNAVAILABLE","exception_type":type(e).__name__,"message":str(e)})
 
     async with async_playwright() as pw:
         await asyncio.gather(*(browser_worker(pw,b) for b in MATRICES[cfg["matrix"]]))
@@ -353,7 +381,7 @@ async def run(cfg: dict, output: Path) -> Path:
           "tool_version":__version__,"config_hash":config_hash,"matrix":cfg["matrix"],
           "environment":{"platform":platform.platform(),"playwright":importlib.metadata.version("playwright"),
                          "sandbox_enabled":cfg["sandbox"],"headless":cfg["headless"],"fixture_mode":__import__("os").environ.get("TW_VERIFICATION_FIXTURE","none")},
-          "cell_plan":cell_plan,"check_plan":check_plan,"cells":cells,"snapshots":snapshots,"occurrences":occurrences,"checks":checks,"run_gaps":run_gaps}
+          "ux_strategy":cfg.get("ux"),"cell_plan":cell_plan,"check_plan":check_plan,"cells":cells,"snapshots":snapshots,"occurrences":occurrences,"checks":checks,"run_gaps":run_gaps}
     finalize(root,data,cfg)
     log.append("run_completed",input_hash=config_hash,evidence=["report.json","manifest.json","proposals.json"],
                outcome="SUCCEEDED" if data["gate"]["exit_code"]==0 else "FAILED",state="finished")

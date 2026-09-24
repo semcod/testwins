@@ -133,6 +133,23 @@ manifest plików i propozycje Planfile. JUnit, HTML, CLI i suite używają tej s
 
 Przykłady: [docs/RELEASE-0.4.md](docs/RELEASE-0.4.md). API i metryki CDP są oddzielone od diagnozy opartej na obrazie/DOM.
 
+## Strategie UX i reakcje na działania
+
+Wybierz `dashboard`, `form`, `commerce` lub `content` i zadeklaruj oczekiwany
+feedback, fokus, zmianę wyglądu oraz budżety reakcji i animacji. Testwins wiąże
+pomiary z krokami scenariusza i blokuje zaliczenie niespełnionego kontraktu UX.
+Profile symulują nawyki, np. klawiaturę i ograniczenie ruchu.
+
+```bash
+testwins strategies
+testwins run --config configs/ux.yaml --output artifacts/ux
+testwins ux-review artifacts/ux/KONKRETNY-RUN --output artifacts/ux-review
+```
+
+Przykład aplikacji, konfiguracja subactor/subllm i granice pomiarów:
+[Strategie UX](docs/information/ux-strategies.md). `ux-review` tworzy propozycje
+napraw powiązane z dowodami, do przeglądu i ponownego testu.
+
 ## WUP, LLM i tickety
 
 ```bash
