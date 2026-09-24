@@ -47,6 +47,8 @@ async def guard(context, cfg: dict) -> None:
 async def collect(page, cdp, cfg: dict) -> dict:
     opts=dict(cfg["capture"]);opts["alignment"]=cfg["rules"]["alignment"];opts["capture_viewport"]=page.viewport_size;opts["overlays"]=cfg.get("overlays",[])
     opts['frame_targets'] = cfg.get('frames', [])
+    from .sticky import scoped_regions
+    opts['sticky_regions'] = scoped_regions(cfg, page.scope if hasattr(page, 'scope') else {'kind': 'root'})
     if cdp:
         response=await cdp.send("Runtime.evaluate",{"expression":"("+COLLECTOR+")("+json.dumps(opts)+")",
                                "returnByValue":True,"awaitPromise":True})
@@ -306,7 +308,8 @@ async def run(cfg: dict, output: Path) -> Path:
         evidence=[str(folder/x) for x in ("viewport.png","snapshot.json","rendered.html","meta.json")]
         ss={"meta":meta,"image":evidence[0],"data":evidence[1],"html":evidence[2],
             "annotation":str(folder/"annotated.png"),"stable":stable,"stability":s['stability'],"baseline":bstatus,
-            "axe":axe_status,"gaps":s["gaps"],"repeat":repeat,"overlays":s.get("overlays",[])}
+            "axe":axe_status,"gaps":s["gaps"],"repeat":repeat,"overlays":s.get("overlays",[]),
+            "sticky_regions":s.get('sticky_regions',[])}
         from .performance import measure
         ss["performance"]=await measure(cdp,cfg["performance"])
         if ss["performance"]["status"]=="incomplete":

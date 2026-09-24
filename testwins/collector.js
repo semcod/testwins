@@ -12,7 +12,9 @@
   const parent = el => el.parentElement || (el.getRootNode() instanceof ShadowRoot ? el.getRootNode().host : null);
   const contains = (a,b) => {for(let e=b;e;e=parent(e)) if(e===a) return true; return false;};
   const pathCache = new WeakMap();
-  const observedElements = new Map(), hitElements = new WeakMap();
+  const observedElements = new Map(), hitElements = new WeakMap(), textElements = [];
+  let fragmentTarget=null;
+  try {fragmentTarget=document.getElementById(decodeURIComponent(location.hash.slice(1)));} catch {}
   const path = el => {
     if(!el || el.nodeType!==1) return '';
     if(pathCache.has(el)) return pathCache.get(el);
@@ -158,6 +160,12 @@
         gaps.push({kind:'canvas',selector,reason:'Canvas contents require screenshot interpretation or explicit UI assertions.'});
       nodes.push(n);
       if(privateNode)continue;
+      let protectedFromSticky=fragmentTarget!==null&&contains(fragmentTarget,el);
+      for(let e=el;e;e=parent(e)){
+        if(e.matches('h1,h2,h3,h4,h5,h6,[role=heading],button,a,input,select,textarea,summary,label,[role=button],[role=link],[role=checkbox],[role=tab],[role=menuitem],[tabindex],[contenteditable],:target,:focus')){
+          protectedFromSticky=true;break;
+        }
+      }
       // Direct text nodes only: parent/child DOM rectangles are not mistaken for text collisions.
       for(const child of el.childNodes){
         if(child.nodeType!==Node.TEXT_NODE||!child.textContent.trim())continue;
@@ -185,7 +193,8 @@
             }
             if(scrollableX && scrollableY)break;
           }
-          texts.push({selector,ancestors,rect:rr,visibleRect:vr,text:child.textContent.trim().slice(0,160),
+          textElements.push(el);
+          texts.push({selector,ancestors,rect:rr,visibleRect:vr,text:child.textContent.trim().slice(0,160),protectedFromSticky,
             intentional: intentional||cs.textOverflow==='ellipsis'||parseInt(cs.webkitLineClamp)>0,
             // Clip by viewport is navigation, not a defect. Only local CSS clipping is evaluated below.
             localClipX:ancestorClipX || (clipX && (rr.x<border.x-1||rr.x+rr.width>border.x+border.width+1)),
@@ -205,6 +214,65 @@
       if(r.width && r.height) masks.push(r);
     }
   }
+  const sticky_regions=(opts.sticky_regions||[]).map(contract=>{
+    const result={id:contract.id,selector:contract.selector,content:contract.content,
+      state:'invalid',errors:[],header:null,rect:null,coverage:[]};
+    const unique=selector=>{const matches=document.querySelectorAll(selector);
+      if(matches.length!==1)throw new Error('Sticky selectors must each match exactly one element');
+      return matches[0];};
+    const inside=(a,b)=>a.x>=b.x&&a.y>=b.y&&a.x+a.width<=b.x+b.width&&a.y+a.height<=b.y+b.height;
+    try{
+      const header=unique(contract.selector),content=unique(contract.content),n=observedElements.get(header);
+      if(!n||!observedElements.has(content)||!contains(content,header)||content===header||isPrivate(header))
+        throw new Error('Sticky header must be observed inside its declared public content container');
+      const cs=getComputedStyle(header),r=rect(header.getBoundingClientRect());
+      result.header=path(header);result.rect=r;
+      if(cs.position!=='sticky'||!Number.isFinite(parseFloat(cs.top))||parseFloat(cs.top)<0)
+        throw new Error('Only top-sticky headers are supported');
+      if(!/^rgb\([\d.\s,]+\)$|^rgba\([\d.\s,]+,\s*1(?:\.0*)?\)$/.test(cs.backgroundColor)
+          ||cs.backgroundImage!=='none'||cs.backgroundClip!=='border-box'
+          ||['borderTopLeftRadius','borderTopRightRadius','borderBottomLeftRadius','borderBottomRightRadius'].some(k=>parseFloat(cs[k])!==0))
+        throw new Error('Sticky coverage needs a solid opaque rectangular background');
+      for(let e=header;e;e=parent(e)){
+        const style=getComputedStyle(e);
+        if(+style.opacity!==1||style.transform!=='none'||style.perspective!=='none'
+            ||['translate','rotate','scale','filter','backdropFilter','clipPath','maskImage'].some(k=>style[k]&&style[k]!=='none')
+            ||style.mixBlendMode!=='normal'||style.clip!=='auto'||(style.zoom&&+style.zoom!==1))
+          throw new Error('Composited or clipped sticky backgrounds are not supported');
+        if(e!==header&&e!==document.body&&e!==document.documentElement
+            &&[style.overflowX,style.overflowY].some(v=>!['visible','clip'].includes(v)))
+          throw new Error('Nested scroll containers need a separate sticky contract implementation');
+      }
+      // Inactive is a verified relationship before the header reaches its sticky edge.
+      result.state='inactive';
+      if(scrollY<=0||Math.abs(r.y-(parseFloat(cs.top)-oy))>1)return result;
+      if(!inside(r,n.visibleRect))throw new Error('The sticky header is not fully visible');
+      result.state='active';
+      // Only whole text ranges covered by this opaque rectangle are eligible.
+      // Headings, fragment targets and interactive/focused ancestors always remain checked.
+      for(let index=0;index<texts.length;index++){
+        const text=texts[index],owner=textElements[index];
+        if(text.protectedFromSticky||!contains(content,owner)||contains(header,owner)||!inside(text.rect,r))continue;
+        let ordinaryFlow=true;
+        for(let e=owner;e;e=parent(e)){
+          const style=getComputedStyle(e);
+          if(['absolute','fixed','sticky'].includes(style.position)||style.transform!=='none'
+              ||['translate','rotate','scale'].some(k=>style[k]&&style[k]!=='none'))ordinaryFlow=false;
+          if(e===content)break;
+        }
+        if(!ordinaryFlow)continue;
+        const tr=text.rect;
+        const samples=[[.5,.5],[.02,.02],[.98,.02],[.02,.98],[.98,.98]];
+        if(samples.every(([fx,fy])=>{
+          const x=tr.x+tr.width*fx,y=tr.y+tr.height*fy,top=hit(x,y);
+          const stack=document.elementsFromPoint(x+ox,y+oy),behind=stack.indexOf(owner);
+          // An absent owner (e.g. pointer-events:none) cannot prove paint order.
+          return top&&contains(header,top)&&behind>0&&stack.slice(0,behind).some(e=>contains(header,e));
+        }))result.coverage.push({text_index:index,selector:text.selector,rect:text.rect,hit_samples:5});
+      }
+    }catch(error){result.state='invalid';result.coverage=[];result.errors.push(error.name==='SyntaxError'?'Invalid CSS selector':error.message);}
+    return result;
+  });
   const overlays=(opts.overlays||[]).map(contract=>{
     const result={id:contract.id,state:'invalid',errors:[],trigger:null,overlay:null,background:[],coverage:[]};
     const unique=selector=>{const matches=document.querySelectorAll(selector);
@@ -270,6 +338,6 @@
     screen:{width:screen.width,height:screen.height},dpr:devicePixelRatio,
     scroll:{x:scrollX+ox,y:scrollY+oy,layoutX:scrollX,layoutY:scrollY},document:{width:document.documentElement.scrollWidth,height:document.documentElement.scrollHeight},
     hasViewportMeta:!!document.querySelector('meta[name=viewport]'),fontsStatus:document.fonts.status,
-    title:document.title.slice(0,200),nodes,texts,masks,alignments,overlays,links:Array.from(new Set(links)).slice(0,200),
+    title:document.title.slice(0,200),nodes,texts,masks,alignments,overlays,sticky_regions,links:Array.from(new Set(links)).slice(0,200),
     gaps,truncated,html,elapsedMs:Math.round(performance.now()-started)};
 }

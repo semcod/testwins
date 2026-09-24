@@ -51,7 +51,7 @@ def finalize(root: Path, data: dict, cfg: dict) -> None:
         gaps=[g for s in ss for g in s["gaps"]]
         blocking={"required_detector_missing","required_detector_failed","capture_limit","detector_limit",
                   "unstable_layout","alignment_contract","overlay_contract","fonts_pending","baseline_incompatible","required_performance_missing",
-                  "frame_unavailable","frame_nested"}
+                  "frame_unavailable","frame_nested","sticky_contract"}
         skipped=any(c["status"] in ("not_run","blocked") for c in data["checks"] if c["cell"]==cell["id"])
         cell["complete"]=not cell["errors"] and cell["observed_scenes"]==cell["expected_scenes"] and not skipped and not any(g["kind"] in blocking for g in gaps)
         cell["scope_gaps"]=gaps
@@ -78,6 +78,11 @@ def finalize(root: Path, data: dict, cfg: dict) -> None:
          'stage': s['meta']['stage'], 'repeat': s['repeat'],
          'stable': s['stable'], 'evidence': s['data'], **o}
         for s in data['snapshots'] for o in s.get('overlays', [])]
+    data['sticky_observations'] = [
+        {'cell': s['meta']['browser']+'-'+s['meta']['device'], 'stage': s['meta']['stage'],
+         'scope': s['meta'].get('scope', {}), 'repeat': s['repeat'], 'stable': s['stable'],
+         'evidence': s['data'], **o}
+        for s in data['snapshots'] for o in s.get('sticky_regions', [])]
     data["gate"]=evaluate(data)
     data["limitations"]=[
         "Confirmed means a repeatable detector/explicit UI-contract violation, not proof of product intent or a guarantee of all defects.",
@@ -133,7 +138,7 @@ def markdown(root: Path,d: dict) -> None:
            "## Macierz","","| Przeglądarka | Urządzenie | Transport | Stan | Naruszenia | Kandydaci |",
            "|---|---|---|---|---:|---:|"]
     for c in d["cells"]:lines.append(f"| {c['browser']} | {c['device']} | {c['transport']} | {c['status']} | {c['confirmed']} | {c['candidates']} |")
-    lines += ['', stability_text(d), '', overlay_text(d), '']
+    lines += ['', stability_text(d), '', overlay_text(d), '', sticky_text(d), '']
     lines += ["", "## Bramka obowiązkowych kontraktów", "", f"Wynik: **{d['gate']['status']}**, kod wyjścia: {d['gate']['exit_code']}.",
               f"Wymagane kroki: {d['gate']['expected_checks']}; zaliczone: {d['gate']['passed_checks']}; nieudane: {d['gate']['failed_checks']}; zablokowane/niewykonane: {d['gate']['blocked_checks']}.", ""]
     for c in d['checks']:
@@ -157,6 +162,15 @@ def overlay_text(data: dict) -> str:
     invalid=sum(o['state']=='invalid' for o in observations)
     return (f"Overlay contracts: {len(observations)} observations; {allowed} stable control-coverage observations "
             f"declared intentional; {invalid} invalid relationships. Hit evidence and state are retained in report.json and snapshots.") if observations else ''
+
+
+def sticky_text(data: dict) -> str:
+    observations = data.get('sticky_observations', [])
+    hidden = sum(len(o['coverage']) for o in observations if o['state'] == 'active' and o['stable'])
+    invalid = sum(o['state'] == 'invalid' for o in observations)
+    return (f'Sticky regions: {hidden} stable text-range observations fully covered by declared opaque headers; '
+            f'{invalid} unverified contracts. Headings, fragment targets and controls remain checked. '
+            'Scoped coverage evidence is retained in report.json and snapshots.') if observations else ''
 
 
 def stability_text(data: dict) -> str:
@@ -227,7 +241,7 @@ def html_report(root: Path,d: dict) -> None:
 <div class="metrics"><div class="metric"><b>{d['summary']['confirmed']}</b>powtarzalnych naruszeń</div><div class="metric"><b>{d['summary']['candidate']}</b>kandydatów do oceny</div><div class="metric"><b>{d['coverage']['incomplete_cells']} / {d['coverage']['expected_cells']}</b>niepełnych komórek</div></div>
 <p><a href="REPORT.md">Raport Markdown</a> · <a href="report.json">JSON</a> · <a href="matrix.csv">Macierz CSV</a> · <a href="proposals.json">Propozycje Planfile</a> · <a href="manifest.json">Manifest dowodów</a></p>
 <h2>Macierz wykonania</h2><div class="scroll"><table><thead><tr><th>Browser / version</th><th>Device</th><th>Transport</th><th>Status</th><th>Confirmed</th><th>Candidates</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div>
-<p>{e(stability_text(d))}</p><p>{e(overlay_text(d))}</p>
+<p>{e(stability_text(d))}</p><p>{e(overlay_text(d))}</p><p>{e(sticky_text(d))}</p>
 <h2>Bramka wykonania: {e(d['gate']['status'])}</h2><p>Kod: {d['gate']['exit_code']} · wymagane: {d['gate']['expected_checks']} · zaliczone: {d['gate']['passed_checks']} · nieudane: {d['gate']['failed_checks']} · niewykonane/zablokowane: {d['gate']['blocked_checks']}</p><div class="scroll"><table><thead><tr><th>Komórka</th><th>Scenariusz / krok</th><th>Powtórzenie</th><th>Stan</th></tr></thead><tbody>{contracts}</tbody></table></div>
 {ux_table}
 <h2>Obserwacje</h2><input id="filter" aria-label="Filtruj obserwacje" placeholder="Filtruj: overlap, mobile, selektor…">{''.join(cards) or '<p>Brak obserwacji spełniających reguły. Sprawdź pokrycie powyżej.</p>'}

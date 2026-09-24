@@ -26,7 +26,7 @@ def layout_signature(snapshot: dict) -> str:
 
 def assess_stability(before: dict, after: dict) -> dict:
     def state(s):
-        result = {k: s.get(k) for k in ('hasViewportMeta', 'fontsStatus', 'truncated', 'gaps', 'overlays')}
+        result = {k: s.get(k) for k in ('hasViewportMeta', 'fontsStatus', 'truncated', 'gaps', 'overlays', 'sticky_regions')}
         # Retain hit tests, focus, disabled/inert, clipping flags and computed
         # styles. Equal boxes alone do not establish equal detector evidence.
         for surface in ('nodes', 'texts'):

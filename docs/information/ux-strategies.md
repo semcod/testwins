@@ -3,14 +3,14 @@
   "schema": "wellmanifest.docs/document/v1",
   "id": "ux-strategies",
   "kind": "information",
-  "version": 6,
+  "version": 7,
   "title": "Strategie UX, reakcje interfejsu i naprawy z subllm",
   "status": "implemented",
   "owner": "semcod/testwins",
   "created": "2026-09-23",
   "updated": "2026-09-24",
   "review_after": "2026-12-23",
-  "source_revision": "c87ff5a93953994140800f75e1e10564349748c1",
+  "source_revision": "80ebb9fc9731e5405fc7f4bbc5e0cb25e5f7ddec",
   "affected_repositories": [
     "semcod/testwins"
   ],
@@ -28,7 +28,9 @@
     "repo://semcod/testwins/tests/test_overlays_browser.py",
     "repo://semcod/testwins/testwins/frames.py",
     "repo://semcod/testwins/tests/test_frames_browser.py",
-    "repo://semcod/testwins/configs/c2004/frames.yaml"
+    "repo://semcod/testwins/configs/c2004/frames.yaml",
+    "repo://semcod/testwins/testwins/sticky.py",
+    "repo://semcod/testwins/tests/test_sticky_browser.py"
   ]
 }
 ---
@@ -498,3 +500,79 @@ osadzenia, którego ta wersja nie interpretuje jako pełnej powierzchni iframe.
 Raporty pozostają `incomplete`. Także początkowe ładowanie ramki zachowano
 w pierwszych dowodach; finalny runner czeka na gotowość rodzica przed próbą
 obserwacji dziecka. Nie zmieniono kodu ani wdrożenia C2004 w PLF-007.
+
+
+## Wersja 7: tekst przewinięty pod belkę (PLF-010)
+
+Jawny kontrakt `sticky_regions` odróżnia zwykły tekst całkowicie przewinięty
+pod nieprzezroczystą belkę od widocznego nakładania tekstów:
+
+```yaml
+sticky_regions:
+  - id: guide-toolbar
+    frame: guide
+    selector: .toolbar
+    content: .wrap
+```
+
+Bez `frame` kontrakt dotyczy dokumentu głównego. Z `frame` jest oceniany wyłącznie
+w osobnej obserwacji wskazanej ramki, którą scenariusz musi włączyć przez `frames`.
+Maksymalnie 16 kontraktów; `selector` i `content` muszą wskazywać po jednym
+widocznym elemencie, a belka musi należeć do zadeklarowanego kontenera treści.
+
+Obsługiwane jest `position: sticky` przy górnej krawędzi viewportu przewijanego
+dokumentu. Przed osiągnięciem krawędzi relacja jest nieaktywna. Wykluczenie
+z porównań tekstowych wymaga pełnego prostokąta tekstu wewnątrz jednolitego,
+nieprzezroczystego, prostokątnego tła belki oraz pięciu próbek kolejności
+trafienia. W próbkach musi wystąpić zarówno belka, jak i położony pod nią
+właściciel tekstu. Sam brak możliwości kliknięcia tekstu nie jest dowodem.
+
+Nadal sprawdzane są nagłówki, kontrolki i ich etykiety, elementy fokusowalne,
+aktualny cel fragmentu URL (również zmienionego przez History API) oraz ich
+potomkowie. Elementy wyjęte z przepływu, transformowane, częściowo zakryte
+lub nieobecne w stosie trafień nie uzyskują takiego wykluczenia. Kontrakt
+nie zmienia wykrywania przycięcia CSS, zasłonięcia kontrolek ani prywatnych masek.
+Chronione cele fragmentów to elementy identyfikowane przez ID; mechanizm nie
+interpretuje wszystkich możliwych intencji nawigacji czy wewnętrznego stanu aplikacji.
+
+Nieprzezroczystość i geometria muszą zostać potwierdzone. Przezroczystość,
+zaokrąglenia, transformacje, efekty kompozytora, zagnieżdżone kontenery przewijania
+oraz brak elementu pozostawiają `TW-STICKY-CONTRACT` i lukę `sticky_contract`.
+Luka blokuje zaliczenie audytu. Niestabilna obserwacja nie uprawnia do pominięcia
+tekstu. Nie jest to ogólne wyłączenie TW-TEXT-OVERLAP ani analiza wszystkich pikseli.
+
+Migawki zachowują surowe zakresy tekstu oraz `sticky_regions` z powiązaniem,
+stanem, prostokątem belki, indeksami zakresów i próbkami. Raport zawiera osobne
+`sticky_observations`, wraz z ramką, etapem, powtórzeniem, stabilnością i ścieżką
+dowodu. HTML/Markdown podają licznik stabilnych obserwacji tekstu pod belką,
+oddzielnie od naruszeń i wykluczeń `suppressions`.
+
+Poprawka aplikacji C2004 PLF-2552 usunęła pierwotne zasłanianie nagłówka poprzez
+pomiar wysokości belki i scroll-padding-top. Jej [kanoniczny raport](https://github.com/maskservice/c2004/blob/568a2d345ce6d6dea88a492371e10ad4877689d1/docs/analysis/guide-anchor-visibility.md)
+rozróżnia naprawiony nagłówek od późniejszego zgłoszenia akapitu poprzedniej sekcji,
+który znajduje się pod tłem belki. Konfiguracja `configs/c2004/frames.yaml` jawnie
+opisuje tę relację; testy negatywne nadal wymagają wykrycia źle przewiniętego
+nagłówka i zasłoniętego przycisku.
+
+Walidacja PLF-010: 333 testy jednostkowe oraz 31 regresji wybranego zakresu
+przeszły lokalnie. Testy obejmują oba konteksty dokumentu, przezroczystość,
+niepełne pokrycie, transformacje, stos trafień, semantyczne nagłówki i kontrolki,
+fragment URL, stabilność oraz kompletny raport i bramkę. Wynik pełnego zestawu
+przeglądarkowego i wymagane CI są osobnymi dowodami publikacji.
+
+Rzeczywiste ponowne audyty zachowano w PLF-010; hashe manifestów i zgodność
+z implementacją są w prywatnym live-validation.json (SHA-256: 7a9389279dc1f51c18234c523128f0183e1368f0de94da85410bbd7bfff0b3cc).
+Lokalny C2004: 0 potwierdzonych naruszeń, 1 kandydat związany z nieobsługiwaną
+geometrią ramek; 4/12 asercji wykonane, 8 zablokowanych. Oba desktopowe
+powtórzenia zachowują dowód przykrycia poprzedniego akapitu zamiast zgłaszać
+nakładanie jego niewidocznego tekstu na belkę.
+
+DisplayNet zmienił wdrożenie podczas obserwacji. Pierwsze powtórzenie desktopu
+potwierdziło ten sam kontrakt belki. Pozostały audyt zarejestrował 45 potwierdzonych
+naruszeń geometrii głównego układu, 127 kandydatów oraz 2/12 wykonanych asercji.
+Późniejszy odczyt HTTP (2026-09-24 12:48 UTC) wykazał poradnik bez odwołania do
+skryptu naprawy i odpowiedź 404 dla guide-navigation.js, mimo że bieżący kod
+C2004 nadal zawiera plik. To odrębna regresja wdrożenia, zapisana jako PLF-2553
+w maskservice/c2004. Nie zmieniono wdrożenia ani nie ukryto tych wyników.
+Oba pełne audyty nadal mają status `incomplete`; nie są dowodem poprawności
+całej aplikacji ani wszystkich rozmiarów ekranu.

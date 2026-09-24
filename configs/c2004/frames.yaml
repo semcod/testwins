@@ -19,6 +19,11 @@ rules:
 frames:
 - id: guide
   selector: iframe.connect-help-frame
+sticky_regions:
+- id: guide-toolbar
+  frame: guide
+  selector: .toolbar
+  content: .wrap
 routes: []
 journeys:
 - id: guide

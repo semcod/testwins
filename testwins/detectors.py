@@ -27,6 +27,8 @@ def detect(snapshot: dict, cfg: dict, device: dict) -> list[dict]:
         if key not in findings: findings[key] = f
     from .overlays import assess_overlays
     overlay_findings, intentional_coverage = assess_overlays(snapshot, cfg)
+    from .sticky import assess_sticky_regions
+    sticky_findings, hidden_text = assess_sticky_regions(snapshot, cfg)
     vp = snapshot["viewport"]
     if snapshot["document"]["width"] > vp["width"]+rules["clip_px"]:
         offenders = [n for n in snapshot["nodes"] if n["tag"] not in ("html","body")
@@ -53,6 +55,7 @@ def detect(snapshot: dict, cfg: dict, device: dict) -> list[dict]:
                  "Widoczny fragment tekstu wychodzi poza obszar przycinania, bez jawnego ellipsis/line-clamp.",
                  [t["selector"]],[t["rect"]],"high",.91,
                  details={"horizontal":t.get("localClipX",False),"vertical":t.get("localClipY",False)}))
+        if i in hidden_text: continue
         buckets=[(x,y) for x in range(int(r["x"]//128),int((r["x"]+r["width"])//128)+1)
                  for y in range(int(r["y"]//128),int((r["y"]+r["height"])//128)+1)]
         for b in buckets:
@@ -152,7 +155,7 @@ def detect(snapshot: dict, cfg: dict, device: dict) -> list[dict]:
                     emit(Finding("TW-AUTH-FORM-AUTOCOMPLETE", "Brak atrybutu autocomplete na polu hasła",
                                  "Pole hasła powinno posiadać atrybut autocomplete ('current-password' lub 'new-password'), aby ułatwić zarządzanie poświadczeniami przez przeglądarkę.",
                                  [n["selector"]], [vr], "normal", 0.85, candidate=True))
-    return overlay_findings + [f.to_dict() for f in findings.values()]
+    return overlay_findings + sticky_findings + [f.to_dict() for f in findings.values()]
 
 
 def from_axe(result: dict) -> list[dict]:
