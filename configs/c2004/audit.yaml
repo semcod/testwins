@@ -1,0 +1,30 @@
+# C2004 rendered UI validation; set --url to the observed deployment.
+schema: testwins.config/v1
+project: c2004
+base_url: http://127.0.0.1:8100
+matrix: chromium
+headless: true
+color_scheme: dark
+axe:
+  enabled: false
+capture:
+  repeats: 2
+  scroll_tiles: 2
+  settle_ms: 600
+  timeout_ms: 10000
+  max_cell_seconds: 600
+  max_elements: 5000
+  max_text_rects: 10000
+  ready_selector: .lang-trigger
+rules:
+  heuristic_alignment: false
+allowed_origins: []
+routes:
+- id: users
+  path: /connect-id/list?lang=pl
+- id: devices
+  path: /connect-id/devices?lang=pl
+- id: reports
+  path: /connect-reports/week?filter=all&lang=pl
+- id: guide
+  path: /connect-help-oql-poradnik?lang=pl

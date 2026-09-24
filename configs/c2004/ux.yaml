@@ -1,0 +1,70 @@
+# C2004 rendered UI validation; set --url to the observed deployment.
+schema: testwins.config/v1
+project: c2004
+base_url: http://127.0.0.1:8100
+matrix: chromium
+headless: true
+color_scheme: dark
+axe:
+  enabled: false
+capture:
+  repeats: 2
+  scroll_tiles: 1
+  settle_ms: 600
+  timeout_ms: 10000
+  max_cell_seconds: 600
+  max_elements: 5000
+  max_text_rects: 10000
+  ready_selector: .lang-trigger
+  freeze_animations: false
+rules:
+  heuristic_alignment: false
+allowed_origins: []
+routes: []
+ux:
+  strategy: dashboard
+  habit: standard
+journeys:
+- id: language-menu
+  path: /connect-id/list?lang=pl
+  steps:
+  - id: open
+    action: click
+    selector: .lang-trigger
+    allow_mutation: true
+    expect:
+      kind: attribute
+      selector: .lang-trigger
+      name: aria-expanded
+      value: 'true'
+    ux:
+      feedback:
+        kind: attribute
+        selector: .lang-trigger
+        name: aria-expanded
+        value: 'true'
+      visual_change: .lang-menu
+      motion: .lang-menu
+      response_ms: 3000
+      feedback_ms: 1000
+      motion_ms: 500
+  - id: close
+    action: click
+    selector: .lang-trigger
+    allow_mutation: true
+    expect:
+      kind: attribute
+      selector: .lang-trigger
+      name: aria-expanded
+      value: 'false'
+    ux:
+      feedback:
+        kind: attribute
+        selector: .lang-trigger
+        name: aria-expanded
+        value: 'false'
+      visual_change: .lang-menu
+      motion: .lang-menu
+      response_ms: 3000
+      feedback_ms: 1000
+      motion_ms: 500
