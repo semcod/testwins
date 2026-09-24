@@ -1,0 +1,48 @@
+# Authentication form validation profile for Clonerd
+schema: testwins.config/v1
+project: clonerd-auth
+base_url: http://127.0.0.1:8891
+matrix: chromium
+headless: true
+sandbox: true
+locale: pl-PL
+timezone: Europe/Warsaw
+color_scheme: dark
+allowed_origins: []
+capture:
+  repeats: 1
+  scroll_tiles: 1
+  timeout_ms: 10000
+  settle_ms: 250
+  max_cell_seconds: 60
+  ready_selector: '#main'
+  mask_selectors:
+  - input
+  - textarea
+  - '[contenteditable=true]'
+  - '[data-private]'
+  before_steps: true
+rules:
+  auth_form_standards: true
+axe:
+  enabled: false
+  required: false
+baseline:
+  fail_on_difference: false
+devices:
+  desktop:
+    width: 1440
+    height: 900
+    dpr: 1
+    touch: false
+    mobile: false
+routes: []
+journeys:
+- id: auth-login
+  path: /?source=demo&mode=user&layout=desktop&panel=auth&auth=login&tour=off
+  steps:
+  - id: login-form
+    action: assert
+    expect:
+      kind: visible
+      selector: form[data-form="auth"]
