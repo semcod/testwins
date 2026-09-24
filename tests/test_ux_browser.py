@@ -27,8 +27,9 @@ HTML = '''<!doctype html><html><head><meta name="viewport" content="width=device
 @pytest.fixture
 def page():
     executable = os.environ.get('CHROMIUM_EXECUTABLE') or shutil.which('chromium')
-    if not executable: pytest.skip('Chromium not installed')
     with sync_playwright() as pw:
+        # With no override, Playwright resolves its bundled browser and raises
+        # if it is unavailable: an explicit browser run must execute the probes.
         browser = pw.chromium.launch(executable_path=executable,headless=True,args=['--no-sandbox'])
         try:
             page = browser.new_page(); page.set_content(HTML)
