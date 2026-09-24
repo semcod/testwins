@@ -56,7 +56,10 @@ Badania trwały 24 września 2026, około 08:20–08:29 UTC.
 ## Metoda
 
 Testwins używa rewizji wskazanej w metadanych; checkout C2004 miał
-`7548feb420fbbde7e3a746fbf69ae1b6b7b9aac3`. Nie jest to dowód rewizji
+`0a8d4198492e08b60d851a606cc9edf6db171214` przy odczycie celów i przy
+podsumowaniu testów. Wcześniejszy odczyt przy rozpoczęciu zadania wskazywał
+`7548feb420fbbde7e3a746fbf69ae1b6b7b9aac3`; równoległy wykonawca zapisał
+dokumentację restartów. Nie jest to dowód rewizji
 uruchomionych kontenerów. Porównano HTTP i hashe faktycznie serwowanych
 zasobów: oba panele miały ten sam index, główny pakiet JavaScript
 `index-askH_i_G.js` i `startup-guard.js`, lecz różne `config.js`.
