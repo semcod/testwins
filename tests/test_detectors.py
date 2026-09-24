@@ -37,3 +37,11 @@ def test_scroll_positions_dedupe_as_same_ui_state():
     f={'rule':'TW-X','selectors':['#a']}
     assert identity('p','home--initial',f)==identity('p','home--scroll-3',f)
     assert identity('p','cart--click',f)!=identity('p','cart--initial',f)
+
+def test_legacy_snapshot_without_target_geometry_keeps_small_target_finding():
+    node=dict(selector='#old',parent='body',tag='button',display='block',rect=rect(w=44,h=44),
+              visibleRect=rect(w=44,h=12),interactive=True,disabled=False,inert=False,
+              brokenImage=False,hitSamples=0,occluded=0,covering=[])
+    finding=next(f for f in rules(snapshot(nodes=[node]),'mobile') if f['rule']=='TW-TARGET-SMALL')
+    assert finding['details']['measurement']=='visible-fragment'
+    assert finding['details']['target_size']=={'width':44,'height':12}
