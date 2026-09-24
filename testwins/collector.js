@@ -122,6 +122,18 @@
         occluded:0,hitSamples:0,covering:[],
         focused:el===document.activeElement || el===el.getRootNode().activeElement,
         ariaHiddenAncestor:!!el.closest('[aria-hidden="true"]'),
+        inputType:el.localName==='input'?(el.getAttribute('type')||'text').toLowerCase():null,
+        autocomplete:el.localName==='input'?(el.getAttribute('autocomplete')||''):null,
+        formDetails:el.localName==='form'?{
+          method:(el.getAttribute('method')||'get').toLowerCase(),
+          action:el.getAttribute('action')||'',
+          selector:selector
+        }:(el.localName==='input'?{
+          hasForm:!!el.form,
+          method:el.form?(el.form.getAttribute('method')||'get').toLowerCase():null,
+          action:el.form?(el.form.getAttribute('action')||''):null,
+          selector:el.form?path(el.form):null
+        }:null),
         css:Object.fromEntries(['minWidth','maxWidth','minHeight','maxHeight','boxSizing','whiteSpace','overflowWrap',
         'wordBreak','lineHeight','fontFamily','zIndex','opacity','transform','pointerEvents','isolation',
         'flexShrink','flexGrow','gap','marginTop','marginRight','marginBottom','marginLeft',
@@ -246,7 +258,7 @@
     if(opts.mask_selectors.some(s=>el.matches(s))) {el.textContent='[REDACTED]';el.removeAttribute('value');}
     for(const attr of Array.from(el.attributes)){
       const k=attr.name;
-      if(!['id','class','role','type','alt','title','data-testid'].includes(k) && !k.startsWith('aria-')) el.removeAttribute(k);
+      if(!['id','class','role','type','alt','title','data-testid','method','action','autocomplete','name'].includes(k) && !k.startsWith('aria-')) el.removeAttribute(k);
       else if(/token|secret|password|bearer/i.test(attr.value)&&k!=='type')el.setAttribute(k,'[REDACTED]');
     }
   }

@@ -53,3 +53,7 @@ downloads:
   enabled: true
   max_bytes: 10485760
   retain: false
+sessions:
+  authenticated:
+    storage_state: ../.auth/user.json
+default_session: authenticated

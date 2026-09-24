@@ -729,6 +729,60 @@
       "root_cause_authority": "hypothesis-only"
     },
     {
+      "id": "GUI-AUTH-FORM-NO-PARENT",
+      "group": "forms",
+      "name": "Pole hasła poza formularzem",
+      "possible_causes": [
+        "brak znacznika form",
+        "błędna struktura DOM",
+        "użycie diva zamiast form"
+      ],
+      "confirmation": "Sprawdź czy input[type=password] jest dzieckiem znacznika form lub posiada atrybut form.",
+      "detection": "TW-AUTH-FORM-NO-PARENT",
+      "automatic": true,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-AUTH-FORM-METHOD",
+      "group": "forms",
+      "name": "Formularz uwierzytelniania bez method='post'",
+      "possible_causes": [
+        "domyślna metoda GET",
+        "brak atrybutu method w SPA",
+        "wyłącznie obsługa JS submit"
+      ],
+      "confirmation": "Sprawdź atrybut method na formularzu logowania/rejestracji.",
+      "detection": "TW-AUTH-FORM-METHOD",
+      "automatic": true,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-AUTH-FORM-ACTION",
+      "group": "forms",
+      "name": "Formularz uwierzytelniania bez atrybutu action",
+      "possible_causes": [
+        "brak atrybutu action w formularzu SPA",
+        "wyłącznie obsługa programowa przez fetch"
+      ],
+      "confirmation": "Sprawdź atrybut action na formularzu uwierzytelniania.",
+      "detection": "TW-AUTH-FORM-ACTION",
+      "automatic": true,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-AUTH-FORM-AUTOCOMPLETE",
+      "group": "forms",
+      "name": "Brak autocomplete na polu hasła",
+      "possible_causes": [
+        "brak atrybutu autocomplete",
+        "błędna wartość autocomplete"
+      ],
+      "confirmation": "Sprawdź czy input[type=password] posiada autocomplete='current-password' lub 'new-password'.",
+      "detection": "TW-AUTH-FORM-AUTOCOMPLETE",
+      "automatic": true,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
       "id": "GUI-VALIDATION",
       "group": "forms",
       "name": "Błędna walidacja pola",
