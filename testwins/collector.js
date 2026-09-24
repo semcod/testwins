@@ -137,8 +137,11 @@
         n.covering=Array.from(new Set(n.covering));
       }
       if(el.localName==='a'&&el.href&&visibleRect.width>0&&visibleRect.height>0) links.push(el.href);
-      if(el.localName==='iframe'&&visibleRect.width>0&&visibleRect.height>0)
-        gaps.push({kind:'iframe',selector,reason:'Frame interior is not inspected by the DOM collector; screenshot only.'});
+      if(el.localName==='iframe'&&visibleRect.width>0&&visibleRect.height>0) {
+        masks.push(visibleRect);
+        const selected=(opts.frame_targets||[]).filter(f=>{try{return el.matches(f.selector);}catch{return false;}});
+        gaps.push({kind:'iframe',selector,frame_ids:selected.map(f=>f.id),reason:'Frame interior requires a separately scoped observation; masked in this surface.'});
+      }
       if(el.localName==='canvas'&&visibleRect.width>0&&visibleRect.height>0)
         gaps.push({kind:'canvas',selector,reason:'Canvas contents require screenshot interpretation or explicit UI assertions.'});
       nodes.push(n);
@@ -178,6 +181,16 @@
             transformed:cs.transform!=='none',fontSize:parseFloat(cs.fontSize)});
         }
       }
+    }
+  }
+  // Frame pixels can contain private DOM unavailable to this collector.
+  // Mask them even after the observation limit, including open shadow trees.
+  const privacyRoots=[document];
+  for(let i=0;i<privacyRoots.length;i++) for(const el of privacyRoots[i].querySelectorAll('*')) {
+    if(el.shadowRoot) privacyRoots.push(el.shadowRoot);
+    if(el.localName==='iframe') {
+      const r=intersect(rect(el.getBoundingClientRect()),vp);
+      if(r.width && r.height) masks.push(r);
     }
   }
   const overlays=(opts.overlays||[]).map(contract=>{

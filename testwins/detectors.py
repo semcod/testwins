@@ -38,7 +38,7 @@ def detect(snapshot: dict, cfg: dict, device: dict) -> list[dict]:
              ["html"], [n["rect"] for n in offenders[:5]], "high", .96,
              details={"overflow_css_px":snapshot["document"]["width"]-vp["width"],
                       "offenders":[n["selector"] for n in offenders[:10]]}))
-    if device["mobile"] and not snapshot["hasViewportMeta"]:
+    if device["mobile"] and snapshot.get('scope',{}).get('kind') != 'frame' and not snapshot["hasViewportMeta"]:
         emit(Finding("TW-VIEWPORT-META","Brak deklaracji mobilnego viewportu",
              "Mobilna symulacja nie znalazła meta viewport; sprawdź skalowanie tekstu i szerokość układu.",
              ["head"],[],"normal",.7,True))

@@ -46,14 +46,17 @@ async def guard(context, cfg: dict) -> None:
 
 async def collect(page, cdp, cfg: dict) -> dict:
     opts=dict(cfg["capture"]);opts["alignment"]=cfg["rules"]["alignment"];opts["capture_viewport"]=page.viewport_size;opts["overlays"]=cfg.get("overlays",[])
+    opts['frame_targets'] = cfg.get('frames', [])
     if cdp:
         response=await cdp.send("Runtime.evaluate",{"expression":"("+COLLECTOR+")("+json.dumps(opts)+")",
                                "returnByValue":True,"awaitPromise":True})
         if response.get("exceptionDetails"):raise RuntimeError("rendered DOM collector failed")
         data=response.get("result",{}).get("value")
         if not isinstance(data,dict):raise RuntimeError("rendered DOM collector returned no data")
-        return data
-    return await page.evaluate(COLLECTOR,opts)
+    else:
+        data = await page.evaluate(COLLECTOR,opts)
+    data['scope'] = page.scope if hasattr(page, 'scope') else {'kind': 'root', 'coordinates': 'viewport-css'}
+    return data
 
 
 async def capture_observation(page, cdp, cfg: dict, *, retries=1, repeat_gap_s=0):
@@ -80,7 +83,7 @@ async def capture_observation(page, cdp, cfg: dict, *, retries=1, repeat_gap_s=0
 
 
 async def settle(page, cfg: dict) -> None:
-    await page.locator(cfg["capture"]["ready_selector"]).first.wait_for(state="visible")
+    await page.locator(cfg["capture"]["ready_selector"]).first.wait_for(state="attached" if hasattr(page, 'scope') else "visible")
     await page.evaluate("() => Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,2000))])")
     await page.wait_for_timeout(cfg["capture"]["settle_ms"])
 
@@ -109,7 +112,11 @@ def paint(image_bytes: bytes, s: dict, findings: list[dict], image_path: Path, a
 
 async def assertion(page, spec: dict, previous: str, timeout_ms: int = 8000) -> None:
     kind=spec["kind"]
-    if kind=="url":await expect(page).to_have_url(re.compile(spec["value"]))
+    if kind=="url":
+        if hasattr(page, 'frame'):
+            await page.frame.wait_for_url(re.compile(spec['value']),timeout=timeout_ms,wait_until='domcontentloaded')
+            await page.verify()
+        else:await expect(page).to_have_url(re.compile(spec["value"]))
     elif kind=="changed":
         await page.wait_for_function("old => document.body.innerText !== old",arg=previous)
     else:
@@ -140,6 +147,14 @@ async def act(page, s: dict, cdp=None, device=None, timeout_ms=8000) -> None:
         await page.goto(s["value"],wait_until="domcontentloaded");return
     loc=page.locator(s["selector"])
     a="click" if s["action"]=="download" else s["action"]
+    if hasattr(page, 'verify'):
+        await page.verify()
+        if device and device['touch'] and a in {'click', 'check'}:
+            if a == 'click' or not await loc.is_checked():
+                await loc.tap(timeout=timeout_ms)
+            if a == 'check': await expect(loc).to_be_checked()
+            await page.verify()
+            return
     if cdp and a in ("click","hover","check"):
         if a=="check" and await loc.is_checked():return
         await pointer(page,cdp,s["selector"],touch=bool(device and device["touch"]),hover=a=="hover",timeout_ms=timeout_ms)
@@ -220,9 +235,34 @@ async def run(cfg: dict, output: Path) -> Path:
     axe_code=None
     if cfg["axe"]["enabled"] and Path(cfg["axe"]["path"]).is_file():axe_code=Path(cfg["axe"]["path"]).read_text("utf-8")
 
-    async def capture(page,cdp,bname,dname,device,version,transport,stage,repeat,extra=None):
+    run_cfg = cfg
+    async def capture(page,cdp,bname,dname,device,version,transport,stage,repeat,extra=None,*,frame_ids=(),surface_cfg=None):
+        cfg = surface_cfg or run_cfg
         await settle(page,cfg)
+        observed_frames = []; frame_gaps = []
+        for frame_id in frame_ids:
+            try:
+                from .frames import resolve
+                surface = await resolve(page, cfg, frame_id)
+                child_cfg = copy.deepcopy(cfg)
+                child_cfg['capture']['ready_selector'] = 'body'
+                child_cfg['overlays'] = []; child_cfg['rules']['alignment'] = []
+                child_cfg['performance']['enabled'] = False
+                await capture(surface,None,bname,dname,device,version,'playwright-frame',
+                              stage+'::frame::'+frame_id,repeat,surface_cfg=child_cfg)
+                observed_frames.append(frame_id)
+            except Exception as exc:
+                from .frames import reason_code
+                frame_gaps.append({'kind':'frame_unavailable','frame_id':frame_id,'code':reason_code(exc),
+                                   'reason':'Selected frame could not be safely observed (origin, privacy, geometry or document boundary).',
+                                   'exception_type':type(exc).__name__})
         png,s=await capture_observation(page,cdp,cfg)
+        if hasattr(page, 'scope'):
+            for gap in s['gaps']:
+                if gap['kind'] == 'iframe': gap['kind'] = 'frame_nested'
+        s['gaps'] = [g for g in s['gaps'] if not (g['kind']=='iframe' and set(g.get('frame_ids',[])) & set(observed_frames))]
+        s['gaps'] += frame_gaps
+        s['observed_frames'] = observed_frames
         stable=s['stable'];s["url"]=redact_url(page.url)
         s["links"]=[redact_url(x) for x in s["links"]]
         findings=detect(s,cfg,device)+(extra or [])
@@ -240,13 +280,16 @@ async def run(cfg: dict, output: Path) -> Path:
                 if cfg["axe"]["required"]:s["gaps"].append({"kind":"required_detector_missing","reason":"axe-core asset is unavailable."})
             else:
                 try:
-                    await page.evaluate(axe_code)
-                    axe_data=await asyncio.wait_for(page.evaluate("async masks => {const r=await axe.run({exclude:masks.map(s=>[s])},{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21a','wcag21aa']}});return {violations:r.violations.map(v=>({id:v.id,impact:v.impact,help:v.help,helpUrl:v.helpUrl,nodes:v.nodes.map(n=>({target:n.target}))})),incomplete:r.incomplete.map(x=>x.id)};}",cfg["capture"]["mask_selectors"]),30)
+                    if hasattr(page, 'verify'): await page.verify()
+                    await (page.frame if hasattr(page, 'frame') else page).evaluate(axe_code)
+                    axe_data=await asyncio.wait_for(page.evaluate("async masks => {const r=await axe.run({exclude:masks.map(s=>[s])},{iframes:false,runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21a','wcag21aa']}});return {violations:r.violations.map(v=>({id:v.id,impact:v.impact,help:v.help,helpUrl:v.helpUrl,nodes:v.nodes.map(n=>({target:n.target}))})),incomplete:r.incomplete.map(x=>x.id)};}",cfg["capture"]["mask_selectors"]),30)
                     findings+=from_axe(axe_data);axe_status="completed"
                 except Exception:
                     axe_status="error"
                     if cfg["axe"]["required"]:s["gaps"].append({"kind":"required_detector_failed","reason":"axe-core did not complete."})
         folder=Path("evidence")/f"{bname}-{dname}"/f"r{repeat}"/slug(stage)
+        if hasattr(page, 'scope'):
+            folder=Path('evidence')/f'{bname}-{dname}'/f'r{repeat}'/slug(stage.split('::frame::')[0])/'frames'/page.definition['id']
         dest=root/folder;dest.mkdir(parents=True,exist_ok=True)
         html=s.pop("html")
         (dest/"rendered.html").write_text(html,"utf-8")
@@ -255,7 +298,7 @@ async def run(cfg: dict, output: Path) -> Path:
         meta={"project":cfg["project"],"browser":bname,"browser_version":version,"transport":transport,
               "device":dname,"stage":stage,"viewport_profile":device,"locale":cfg["locale"],
               "timezone":cfg["timezone"],"color_scheme":cfg["color_scheme"],"url":redact_url(page.url),
-              "render_environment":render_environment,"mobile_emulation":bool(device["mobile"] and bname!="firefox"),"tool_version":__version__}
+              "render_environment":render_environment,"mobile_emulation":bool(device["mobile"] and bname!="firefox"),"tool_version":__version__,"scope":s['scope']}
         bfind,bstatus=baseline.assess(image_path,meta,cfg,dest/"diff.png");findings+=bfind
         if bstatus.startswith("incompatible"):s["gaps"].append({"kind":"baseline_incompatible","reason":bstatus})
         atomic_json(dest/"snapshot.json",s);atomic_json(dest/"meta.json",meta)
@@ -298,7 +341,7 @@ async def run(cfg: dict, output: Path) -> Path:
                     if cfg["capture"]["freeze_animations"]:
                         await page.add_style_tag(content="*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important;scroll-behavior:auto!important}")
                         await page.evaluate("() => { if(!window.__tw_instant){window.__tw_instant=true;const orig=Element.prototype.scrollIntoView;Element.prototype.scrollIntoView=function(a){if(a&&typeof a==='object'&&a.behavior==='smooth')a=Object.assign({},a,{behavior:'instant'});return orig.call(this,a);};} }")
-                    await capture(page,cdp,bname,dname,device,version,transport,scene["id"]+"--initial",repeat)
+                    await capture(page,cdp,bname,dname,device,version,transport,scene["id"]+"--initial",repeat,frame_ids=scene.get('frames',[]))
                     cell["observed_scenes"]+=1
                     if not scene.get("steps"):
                         last_y=0
@@ -306,15 +349,14 @@ async def run(cfg: dict, output: Path) -> Path:
                             y=await scroll_tile(page,cdp,device)
                             if abs(y-last_y)<1:break
                             last_y=y
-                            await capture(page,cdp,bname,dname,device,version,transport,scene["id"]+f"--scroll-{tile}",repeat)
+                            await capture(page,cdp,bname,dname,device,version,transport,scene["id"]+f"--scroll-{tile}",repeat,frame_ids=scene.get('frames',[]))
                     failed=False
                     for step in scene.get("steps",[]):
                         check=check_index[(cell["id"],repeat,scene["id"],step["id"])]
                         if failed:continue
                         if cfg["capture"]["before_steps"]:
-                            await capture(page,cdp,bname,dname,device,version,transport,scene["id"]+"--"+step["id"]+"--before",repeat)
+                            await capture(page,cdp,bname,dname,device,version,transport,scene["id"]+"--"+step["id"]+"--before",repeat,frame_ids=scene.get('frames',[]))
                             check["before"]=snapshots[-1]["image"]
-                        previous=await page.locator("body").inner_text() if step["expect"]["kind"]=="changed" else ""
                         from . import ux
                         ux_spec = ux.contract(cfg, step)
                         if cfg.get("ux", {}).get("strategy"):
@@ -322,6 +364,12 @@ async def run(cfg: dict, output: Path) -> Path:
                         error=[];action_completed=False
                         ux_started=False
                         try:
+                            target = page
+                            if 'frame' in step:
+                                from .frames import resolve
+                                target = await resolve(page,cfg,step['frame'])
+                                check['scope'] = target.scope
+                            previous=await target.locator("body").inner_text() if step["expect"]["kind"]=="changed" else ""
                             action=dict(step)
                             if action["action"]=="goto":action["value"]=urljoin(cfg["base_url"],action["value"])
                             if ux_spec:
@@ -337,9 +385,10 @@ async def run(cfg: dict, output: Path) -> Path:
                                 check["download_evidence"]=str(location/"download.json")
                                 check["download"]=await asyncio.wait_for(inspect_download(download,step["expect"],cfg["downloads"],root/location),cfg["capture"]["timeout_ms"]/1000)
                             else:
-                                await act(page,action,cdp,device,cfg["capture"]["timeout_ms"])
+                                await act(target,action,cdp if target is page else None,device,cfg["capture"]["timeout_ms"])
                                 action_completed=True
-                                await assertion(page,step["expect"],previous,cfg["capture"]["timeout_ms"])
+                                if target is not page: await target.verify()
+                                await assertion(target,step["expect"],previous,cfg["capture"]["timeout_ms"])
                             check["status"]="passed"
                         except Exception as exc:
                             failed=True;check["status"]="failed" if action_completed else "blocked";check["exception_type"]=type(exc).__name__
@@ -361,7 +410,7 @@ async def run(cfg: dict, output: Path) -> Path:
                             location = Path("evidence")/cell["id"]/f"r{repeat}"/slug(scene["id"]+"--"+step["id"])/"ux.json"
                             atomic_json(root/location, check["ux"])
                             check["ux_evidence"] = str(location)
-                        await capture(page,cdp,bname,dname,device,version,transport,scene["id"]+"--"+step["id"],repeat,error)
+                        await capture(page,cdp,bname,dname,device,version,transport,scene["id"]+"--"+step["id"],repeat,error,frame_ids=scene.get('frames',[]))
                         check["after"]=snapshots[-1]["image"]
                 except Exception as exc:
                     cell["errors"].append({"scene":scene["id"],"repeat":repeat,"exception_type":type(exc).__name__,"message":str(exc),"code":"TW-CAPTURE-FAILED"})

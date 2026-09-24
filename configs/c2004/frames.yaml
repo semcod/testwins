@@ -1,0 +1,42 @@
+# Explicit same-origin guide coverage; override --url for DisplayNet.
+schema: testwins.config/v1
+project: c2004-guide
+base_url: http://127.0.0.1:8100
+matrix: chromium
+headless: true
+color_scheme: dark
+axe:
+  enabled: false
+capture:
+  repeats: 2
+  scroll_tiles: 1
+  settle_ms: 600
+  timeout_ms: 10000
+  max_cell_seconds: 600
+  ready_selector: iframe.connect-help-frame
+rules:
+  heuristic_alignment: false
+frames:
+- id: guide
+  selector: iframe.connect-help-frame
+routes: []
+journeys:
+- id: guide
+  path: /connect-help-oql-poradnik?lang=pl&theme=dark&font=default&size=100
+  frames: [guide]
+  steps:
+  - id: heading
+    frame: guide
+    action: assert
+    expect:
+      kind: contains_text
+      selector: h1
+      value: jak pisać testy OQL
+  - id: commands
+    frame: guide
+    action: click
+    selector: '.toc a[href="#commands"]'
+    allow_mutation: true
+    expect:
+      kind: url
+      value: '#commands$'

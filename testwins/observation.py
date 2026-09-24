@@ -16,7 +16,7 @@ def layout_signature(snapshot: dict) -> str:
     """Include text ranges and clipping, even when the parent box stays fixed."""
     geometry = {k: snapshot.get(k) for k in (
         'viewport', 'visualViewport', 'layoutViewport', 'document', 'scroll',
-        'dpr', 'masks', 'alignments')}
+        'dpr', 'masks', 'alignments', 'scope')}
     for surface in ('nodes', 'texts'):
         geometry[surface] = [{k: n.get(k) for k in (
             'selector', 'rect', 'visibleRect', 'targetSize')}
