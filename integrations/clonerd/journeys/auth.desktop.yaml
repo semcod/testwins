@@ -4,7 +4,7 @@ project: clonerd-auth
 base_url: http://127.0.0.1:8891
 matrix: chromium
 headless: true
-sandbox: true
+sandbox: false
 locale: pl-PL
 timezone: Europe/Warsaw
 color_scheme: dark
@@ -12,7 +12,7 @@ allowed_origins: []
 capture:
   repeats: 1
   scroll_tiles: 1
-  timeout_ms: 10000
+  timeout_ms: 20000
   settle_ms: 250
   max_cell_seconds: 60
   ready_selector: '#main'

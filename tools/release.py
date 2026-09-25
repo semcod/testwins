@@ -38,6 +38,7 @@ def package():
         if any(part in excluded or part.endswith('.egg-info') for part in rel.parts):continue
         if not p.is_file() or p.is_symlink() or p.suffix in ('.pyc','.pyo'):continue
         if p.name=='.env' or p.name.startswith('.env.') and p.name!='.env.example':continue
+        if p.name=='RELEASE-MANIFEST.json':continue
         if p.name.endswith('.storage-state.json'):continue
         # Large screenshots are supplied separately, not repeated in the source release.
         if rel.parts[0]=='verification' and ('landing-runs' in rel.parts or 'release-browser' in rel.parts or 'browser-runs' in rel.parts):continue
