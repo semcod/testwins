@@ -1,0 +1,35 @@
+schema: testwins.config/v1
+project: cluster-panel
+base_url: http://127.0.0.1:8888
+matrix: chromium
+routes:
+  - id: home
+    path: /
+journeys:
+  - id: tabs-flow
+    path: /
+    steps:
+      - id: click-dns-tab
+        action: click
+        selector: '[data-tab="dns"]'
+        allow_mutation: true
+        expect: {kind: visible, selector: '#pane-dns'}
+      - id: click-scheduler-tab
+        action: click
+        selector: '[data-tab="scheduler"]'
+        allow_mutation: true
+        expect: {kind: visible, selector: '#pane-scheduler'}
+      - id: click-security-tab
+        action: click
+        selector: '[data-tab="security"]'
+        allow_mutation: true
+        expect: {kind: visible, selector: '#pane-security'}
+      - id: click-tickets-tab
+        action: click
+        selector: '[data-tab="tickets"]'
+        allow_mutation: true
+        expect: {kind: visible, selector: '#pane-tickets'}
+capture:
+  repeats: 1
+  scroll_tiles: 1
+  max_cell_seconds: 120
