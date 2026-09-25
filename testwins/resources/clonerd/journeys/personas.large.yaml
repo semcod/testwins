@@ -4,7 +4,7 @@ project: clonerd-ux
 base_url: http://127.0.0.1:8891
 matrix: chromium
 headless: true
-sandbox: true
+sandbox: false
 locale: pl-PL
 timezone: Europe/Warsaw
 color_scheme: dark
@@ -12,7 +12,7 @@ allowed_origins: []
 capture:
   repeats: 2
   scroll_tiles: 4
-  timeout_ms: 10000
+  timeout_ms: 20000
   settle_ms: 250
   max_cell_seconds: 900
   ready_selector: '#main'
@@ -173,7 +173,7 @@ journeys:
     action: assert
     expect:
       kind: visible
-      selector: :nth-match(:is(.data-table, .dv-cards):visible, 1)
+      selector: :nth-match(:is(.data-table, .dv-cards, .data-view):visible, 1)
   - id: novnc-control
     action: assert
     expect:

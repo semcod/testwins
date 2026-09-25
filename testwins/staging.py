@@ -8,7 +8,7 @@ import shutil
 import stat
 from pathlib import Path
 
-EXCLUDED={'.git','.planfile','.testwins','.venv','venv','node_modules','__pycache__','.pytest_cache',
+EXCLUDED={'.git','.planfile','.subactor','.testwins','.venv','venv','node_modules','__pycache__','.pytest_cache',
           '.auth','.testwins-auth','.ssh','.aws','.config','.gnupg','artifacts','verification','baselines','build','dist','.npmrc','.pypirc','.netrc'}
 SECRET_SUFFIXES={'.pem','.key','.p12','.pfx','.kdbx'}
 
