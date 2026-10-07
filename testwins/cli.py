@@ -59,6 +59,11 @@ def parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None=None) -> int:
+    try:
+        from .autoupdate import check_for_updates
+        check_for_updates("testwins")
+    except Exception:
+        pass
     p=parser();a=p.parse_args(argv)
     try:
         if a.command in {'watch','live-status','live-serve','live-export','capacity','diagnose','catalog'}:
