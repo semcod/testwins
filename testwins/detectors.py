@@ -67,6 +67,12 @@ def detect(snapshot: dict, cfg: dict, device: dict) -> list[dict]:
                 u=texts[j]
                 if t["selector"]==u["selector"]: continue
                 if t["selector"] in u.get("ancestors",[]) or u["selector"] in t.get("ancestors",[]): continue
+                t_ov = next((o for o in snapshot.get("overlays", []) if o.get("state") == "active" and (t["selector"] == o.get("overlay") or o.get("overlay") in t.get("ancestors", []))), None)
+                if t_ov and any(c["selector"] == u["selector"] or c["selector"] in u.get("ancestors", []) for c in t_ov.get("coverage", [])):
+                    continue
+                u_ov = next((o for o in snapshot.get("overlays", []) if o.get("state") == "active" and (u["selector"] == o.get("overlay") or o.get("overlay") in u.get("ancestors", []))), None)
+                if u_ov and any(c["selector"] == t["selector"] or c["selector"] in t.get("ancestors", []) for c in u_ov.get("coverage", [])):
+                    continue
                 overlap=intersection(r,u["visibleRect"])
                 fraction=area(overlap)/max(1,min(area(r),area(u["visibleRect"])))
                 if overlap["width"]>rules["overlap_px"] and overlap["height"]>rules["overlap_px"] and fraction>rules["overlap_fraction"]:

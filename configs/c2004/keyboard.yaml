@@ -88,4 +88,5 @@ overlays:
   - .logs-collector-wrapper button
   - .role-select
   - .hardware-runtime-select
-  - button[data-key]
+  - .hw-runtime-btn
+  - button.key
