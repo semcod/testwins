@@ -11,11 +11,18 @@ capture:
   repeats: 2
   scroll_tiles: 2
   settle_ms: 600
-  timeout_ms: 10000
+  timeout_ms: 30000
   max_cell_seconds: 600
   max_elements: 5000
   max_text_rects: 10000
   ready_selector: .lang-trigger
+devices:
+  desktop:
+    width: 1440
+    height: 900
+    dpr: 1
+    touch: false
+    mobile: false
 rules:
   heuristic_alignment: false
 frames:
