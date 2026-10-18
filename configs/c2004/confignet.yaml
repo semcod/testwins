@@ -1,0 +1,49 @@
+schema: testwins.config/v1
+project: confignet
+base_url: http://127.0.0.1:8200
+matrix: chromium
+headless: true
+color_scheme: dark
+axe:
+  enabled: false
+capture:
+  repeats: 2
+  scroll_tiles: 1
+  settle_ms: 800
+  timeout_ms: 10000
+  max_cell_seconds: 600
+  max_elements: 5000
+  max_text_rects: 10000
+  ready_selector: body:has(.confignet-topbar):has(.confignet-sidebar .full-menu-item):has(#confignet-content-viewport > *):has(.session-pill--ok, .session-pill--missing)
+  freeze_animations: false
+rules:
+  heuristic_alignment: false
+allowed_origins: []
+routes:
+- id: oql-system
+  path: /connect-oql-system
+- id: lung-settings
+  path: /connect-oql-system/lung-settings
+- id: hardware-mode
+  path: /connect-oql-system/hardware-mode
+- id: config-network
+  path: /connect-config-network
+- id: menu-editor
+  path: /connect-menu-editor
+ux:
+  strategy: dashboard
+  habit: standard
+journeys:
+- id: runtime-cycle
+  path: /connect-oql-system
+  steps:
+  - id: cycle
+    action: click
+    selector: .hw-runtime-cycle-btn
+    allow_mutation: true
+    expect:
+      kind: attribute
+      selector: .hw-runtime-cycle-btn
+      name: data-runtime-pref
+      value: stacknet
+    ux: {}
