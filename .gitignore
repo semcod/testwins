@@ -27,3 +27,5 @@ build/
 /.subactor/recovery/
 /.subactor/cache/
 /.planfile/
+.koru/
+.planfile/

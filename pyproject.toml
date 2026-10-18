@@ -4,12 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "testwins"
-version = "0.4.0"
+version = "0.4.1"
 description = "Evidence-first testing for web, shell and desktop with TestQL, CDP, LiteLLM and computer vision"
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
-license = "Apache-2.0"
-license-files = ["LICENSE", "THIRD_PARTY.md"]
+license = {text = "Apache-2.0"}
 authors = [{name = "Testwins contributors"}, {name = "Tom Sapletta",email = "tom@sapletta.com"}]
 keywords = ["testing", "testql", "cdp", "visual-testing", "litellm", "gui"]
 classifiers = [
