@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Fixed
+- axe-core never ran: the runner used `hasattr(page, 'frame')` to detect a `FrameSurface`, but Playwright's `Page` has a `frame()` method, so it called `page.frame.evaluate(...)` on a bound method and every observation reported "axe-core did not complete". `url` assertions on ordinary pages had the same defect. Surfaces are now resolved by type (`_surface()`).
+
 ## [0.4.0] - 2026-09-22
 
 ### Docs

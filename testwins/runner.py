@@ -22,6 +22,13 @@ from .util import atomic_json, digest, origin, redact_url, utc_now, slug
 from . import baseline
 from .input import pointer,scroll_tile
 from .observation import layout_signature, assess_stability
+from .frames import FrameSurface
+
+
+def _surface(page):
+    """The Playwright object to evaluate in: a FrameSurface's frame, else the page itself."""
+    return page.frame if isinstance(page, FrameSurface) else page
+
 
 COLLECTOR=Path(__file__).with_name("collector.js").read_text("utf-8")
 
@@ -115,7 +122,7 @@ def paint(image_bytes: bytes, s: dict, findings: list[dict], image_path: Path, a
 async def assertion(page, spec: dict, previous: str, timeout_ms: int = 8000) -> None:
     kind=spec["kind"]
     if kind=="url":
-        if hasattr(page, 'frame'):
+        if isinstance(page, FrameSurface):
             await page.frame.wait_for_url(re.compile(spec['value']),timeout=timeout_ms,wait_until='domcontentloaded')
             await page.verify()
         else:await expect(page).to_have_url(re.compile(spec["value"]))
@@ -283,7 +290,7 @@ async def run(cfg: dict, output: Path) -> Path:
             else:
                 try:
                     if hasattr(page, 'verify'): await page.verify()
-                    await (page.frame if hasattr(page, 'frame') else page).evaluate(axe_code)
+                    await _surface(page).evaluate(axe_code)
                     axe_data=await asyncio.wait_for(page.evaluate("async masks => {const r=await axe.run({exclude:masks.map(s=>[s])},{iframes:false,runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21a','wcag21aa']}});return {violations:r.violations.map(v=>({id:v.id,impact:v.impact,help:v.help,helpUrl:v.helpUrl,nodes:v.nodes.map(n=>({target:n.target}))})),incomplete:r.incomplete.map(x=>x.id)};}",cfg["capture"]["mask_selectors"]),30)
                     findings+=from_axe(axe_data);axe_status="completed"
                 except Exception:
