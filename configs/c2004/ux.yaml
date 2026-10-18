@@ -81,3 +81,4 @@ overlays:
   - .hardware-runtime-select
   - .hw-runtime-btn
   - button.key
+  - '#password-input'

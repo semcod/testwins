@@ -129,3 +129,26 @@ def test_frame_pixels_stay_masked_after_capture_limit(tmp_path):
     report=json.loads((root/'report.json').read_text());assert report['gate']['exit_code']==2
     image=Image.open(root/report['snapshots'][0]['image'])
     assert image.getpixel((70,150))==(35,35,35)
+
+
+def test_subpixel_flex_parent_does_not_falsely_report_frame_clipped():
+    async def check():
+        async with async_playwright() as pw:
+            browser=await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_EXECUTABLE'),headless=True,args=['--no-sandbox'])
+            page=await browser.new_page(viewport={'width':820,'height':1180})
+            html_doc=(
+                '<!doctype html><style>html,body{margin:0;height:100%;overflow:hidden}'
+                '.shell{display:flex;flex-direction:column;height:100vh;overflow:hidden}'
+                '.top{height:71.59375px;flex-shrink:0}'
+                '.main{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}'
+                'iframe{border:0;width:100%;flex:1;height:100%}</style>'
+                '<div class="shell"><div class="top"></div><div class="main">'
+                '<iframe id="guide" srcdoc="'+html.escape(CHILD,quote=True)+'"></iframe>'
+                '</div></div>'
+            )
+            await page.set_content(html_doc)
+            cfg=config();surface=await resolve(page,cfg,'guide')
+            assert surface.box['height']>=1000
+            await browser.close()
+    asyncio.run(check())
+

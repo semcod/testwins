@@ -63,13 +63,13 @@ GEOMETRY = """(el, masks) => {
   }
   const r=el.getBoundingClientRect(), v=visualViewport;
   if(v && (v.scale!==1 || v.offsetLeft || v.offsetTop)) throw Error('frame_visual_viewport_unsupported');
-  const box={x:r.x+el.clientLeft,y:r.y+el.clientTop,width:el.clientWidth,height:el.clientHeight};
-  if(box.width<1 || box.height<1 || box.x<0 || box.y<0 || box.x+box.width>innerWidth || box.y+box.height>innerHeight)
+  const box={x:r.x+el.clientLeft,y:r.y+el.clientTop,width:el.clientWidth,height:el.clientHeight}, eps=1;
+  if(box.width<1 || box.height<1 || box.x<-eps || box.y<-eps || box.x+box.width>innerWidth+eps || box.y+box.height>innerHeight+eps)
     throw Error('frame_not_fully_visible');
   for(let e=parent(el);e;e=parent(e)) {
     const c=getComputedStyle(e), p=e.getBoundingClientRect();
-    if(['hidden','clip','scroll','auto'].includes(c.overflowX) && (box.x<p.x+e.clientLeft || box.x+box.width>p.x+e.clientLeft+e.clientWidth)) throw Error('frame_clipped');
-    if(['hidden','clip','scroll','auto'].includes(c.overflowY) && (box.y<p.y+e.clientTop || box.y+box.height>p.y+e.clientTop+e.clientHeight)) throw Error('frame_clipped');
+    if(['hidden','clip','scroll','auto'].includes(c.overflowX) && (box.x<p.x+e.clientLeft-eps || box.x+box.width>p.x+e.clientLeft+e.clientWidth+eps)) throw Error('frame_clipped');
+    if(['hidden','clip','scroll','auto'].includes(c.overflowY) && (box.y<p.y+e.clientTop-eps || box.y+box.height>p.y+e.clientTop+e.clientHeight+eps)) throw Error('frame_clipped');
   }
   for(const [fx,fy] of [[.5,.5],[.01,.01],[.99,.01],[.01,.99],[.99,.99]]) {
     let top=document.elementFromPoint(box.x+box.width*fx,box.y+box.height*fy), old=null;

@@ -15,7 +15,7 @@ capture:
   max_cell_seconds: 600
   max_elements: 5000
   max_text_rects: 10000
-  ready_selector: .lang-trigger
+  ready_selector: body:has(.lang-trigger):not(:has(#week-grid:empty))
 devices:
   desktop:
     width: 1440
