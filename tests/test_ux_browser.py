@@ -10,6 +10,7 @@ from types import SimpleNamespace
 import pytest
 from playwright.sync_api import sync_playwright
 
+from testwins.browser import find_chromium
 from testwins.ux import PROBE, assess
 
 pytestmark = pytest.mark.browser
@@ -26,7 +27,7 @@ HTML = '''<!doctype html><html><head><meta name="viewport" content="width=device
 
 @pytest.fixture
 def page():
-    executable = os.environ.get('CHROMIUM_EXECUTABLE') or shutil.which('chromium')
+    executable = find_chromium()
     with sync_playwright() as pw:
         # With no override, Playwright resolves its bundled browser and raises
         # if it is unavailable: an explicit browser run must execute the probes.

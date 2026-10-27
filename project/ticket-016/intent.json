@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "1.0.0",
+  "ticketId": "ticket-016",
+  "title": "Offer content and graphic duplication detectors and Chromium binary resolution",
+  "owner": "antigravity",
+  "workstream": "application",
+  "status": "IN_PROGRESS",
+  "phase": "EDIT",
+  "allowedPaths": [
+    "project/ticket-016/**",
+    "testwins/browser.py",
+    "testwins/collector.js",
+    "testwins/config.py",
+    "testwins/detectors.py",
+    "testwins/live/diagnosis.py",
+    "testwins/live/scanner.py",
+    "testwins/resources/minimal/shell.oql",
+    "scenarios/shell.oql",
+    "tests/test_detectors.py",
+    "tests/test_collector_browser.py",
+    "tests/test_css_clipping_browser.py",
+    "tests/test_overlays_browser.py",
+    "tests/test_target_geometry_browser.py",
+    "tests/test_frames_browser.py",
+    "tests/test_sticky_browser.py",
+    "tests/test_ux_browser.py",
+    "CHANGELOG.md"
+  ]
+}

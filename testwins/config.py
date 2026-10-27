@@ -34,7 +34,10 @@ DEFAULT = {
                 "freeze_animations": True, "before_steps": True},
     "rules": {"overlap_px": 2, "overlap_fraction": 0.12, "clip_px": 2,
               "target_px": 24, "alignment": [], "heuristic_alignment": True,
-              "auth_form_standards": True},
+              "auth_form_standards": True,
+              "duplicate_text": True, "duplicate_text_min_chars": 18,
+              "duplicate_label_min_chars": 14, "duplicate_label_min_count": 3,
+              "duplicate_graphics": True, "duplicate_graphics_max": 1},
     "axe": {"enabled": True, "required": True, "path": "/opt/testwins-assets/axe.min.js"},
     "baseline": {"directory": None, "threshold": 0.005, "color_delta": 24,
                  "fail_on_difference": False},
@@ -134,8 +137,13 @@ def validate(cfg: dict) -> dict:
         raise ValueError("crawling requires explicit path allowlists")
     for container, key in [(cfg,"headless"),(cfg,"sandbox"),(cfg["capture"],"freeze_animations"),
                            (cfg["axe"],"enabled"),(cfg["axe"],"required"),(cfg["crawl"],"enabled"),
-                           (cfg["rules"],"heuristic_alignment"),(cfg["baseline"],"fail_on_difference")]:
+                           (cfg["rules"],"heuristic_alignment"),(cfg["rules"],"duplicate_text"),
+                           (cfg["rules"],"duplicate_graphics"),(cfg["baseline"],"fail_on_difference")]:
         if type(container[key]) is not bool:raise ValueError(key+" must be boolean")
+    bounded_int(cfg["rules"]["duplicate_text_min_chars"],8,500,"duplicate_text_min_chars")
+    bounded_int(cfg["rules"]["duplicate_label_min_chars"],6,200,"duplicate_label_min_chars")
+    bounded_int(cfg["rules"]["duplicate_label_min_count"],2,100,"duplicate_label_min_count")
+    bounded_int(cfg["rules"]["duplicate_graphics_max"],1,50,"duplicate_graphics_max")
     for key in ("overlap_px","clip_px","target_px"):
         v=cfg["rules"][key]
         if type(v) not in (int,float) or not 0<v<=100:raise ValueError("invalid rule threshold "+key)

@@ -162,6 +162,79 @@ def detect(snapshot: dict, cfg: dict, device: dict) -> list[dict]:
                     emit(Finding("TW-AUTH-FORM-AUTOCOMPLETE", "Brak atrybutu autocomplete na polu hasła",
                                  "Pole hasła powinno posiadać atrybut autocomplete ('current-password' lub 'new-password'), aby ułatwić zarządzanie poświadczeniami przez przeglądarkę.",
                                  [n["selector"]], [vr], "normal", 0.85, candidate=True))
+    if rules.get("duplicate_text", True):
+        min_chars = rules.get("duplicate_text_min_chars", 18)
+        label_min_chars = rules.get("duplicate_label_min_chars", 14)
+        label_min_count = rules.get("duplicate_label_min_count", 3)
+        by_text: dict[str, list[dict]] = defaultdict(list)
+        for b in snapshot.get("content_blocks", []):
+            raw_text = (b.get("text") or "").strip()
+            norm = " ".join(raw_text.split()).lower()
+            if len(norm) < min(min_chars, label_min_chars):
+                continue
+            by_text[norm].append(b)
+        for norm, items in by_text.items():
+            unique_by_sel: dict[str, dict] = {}
+            for item in items:
+                sel = item.get("selector")
+                if sel and sel not in unique_by_sel:
+                    unique_by_sel[sel] = item
+            distinct = [
+                item for sel, item in unique_by_sel.items()
+                if not any(other_sel != sel and other_sel in item.get("ancestors", []) for other_sel in unique_by_sel)
+            ]
+            threshold = 2 if len(norm) >= min_chars else label_min_count
+            if len(distinct) >= threshold:
+                sample = " ".join((distinct[0].get("text") or "").split())[:120]
+                rects = [
+                    x["visibleRect"] if area(x.get("visibleRect", {"width": 0, "height": 0})) else x.get("rect", {"x": 0, "y": 0, "width": 0, "height": 0})
+                    for x in distinct[:10]
+                ]
+                emit(Finding(
+                    "TW-TEXT-DUPLICATE",
+                    "Zduplikowana treść w widoku",
+                    f"Fragment treści ({sample!r}) powtarza się {len(distinct)} razy w obrębie widoku.",
+                    [x["selector"] for x in distinct[:10]],
+                    rects,
+                    "normal",
+                    0.88,
+                    candidate=True,
+                    details={"text": sample, "count": len(distinct), "length": len(norm)},
+                ))
+    if rules.get("duplicate_graphics", True):
+        max_graphics = rules.get("duplicate_graphics_max", 1)
+        by_sig: dict[str, list[dict]] = defaultdict(list)
+        for g in snapshot.get("graphics", []):
+            sig = (g.get("signature") or "").strip()
+            if sig:
+                by_sig[sig].append(g)
+        for sig, items in by_sig.items():
+            unique_by_sel = {}
+            for item in items:
+                sel = item.get("selector")
+                if sel and sel not in unique_by_sel:
+                    unique_by_sel[sel] = item
+            distinct = [
+                item for sel, item in unique_by_sel.items()
+                if not any(other_sel != sel and other_sel in item.get("ancestors", []) for other_sel in unique_by_sel)
+            ]
+            if len(distinct) > max_graphics:
+                kind = distinct[0].get("kind", "graphic")
+                rects = [
+                    x["visibleRect"] if area(x.get("visibleRect", {"width": 0, "height": 0})) else x.get("rect", {"x": 0, "y": 0, "width": 0, "height": 0})
+                    for x in distinct[:10]
+                ]
+                emit(Finding(
+                    "TW-GRAPHIC-DUPLICATE",
+                    "Zduplikowana forma graficzna",
+                    f"Identyczna forma graficzna ({kind}) powtarza się {len(distinct)} razy w obrębie widoku.",
+                    [x["selector"] for x in distinct[:10]],
+                    rects,
+                    "normal",
+                    0.89,
+                    candidate=True,
+                    details={"kind": kind, "count": len(distinct), "signature": sig[:120]},
+                ))
     return overlay_findings + sticky_findings + [f.to_dict() for f in findings.values()]
 
 

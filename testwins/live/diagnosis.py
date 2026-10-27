@@ -49,6 +49,14 @@ def enrich(finding: dict, snapshot: dict) -> dict:
         add('box-spacing','Różne modele pudełka lub odstępy mogą wyjaśniać odchylenie.',.6,evidence,
             'Porównaj margin, padding, border, box-sizing i wyrównanie osi w homologicznych elementach.',
             'Ujednolić regułę komponentu po potwierdzeniu intencji; nie wyrównywać magiczną poprawką pikselową.')
+    if rule=='TW-TEXT-DUPLICATE':
+        add('duplicate-copy','Powtarzająca się treść zwiększa szum informacyjny w ofercie lub widoku.',.86,evidence,
+            'Porównaj sąsiednie sekcje oraz karty i sprawdź, czy identyczny tekst nie dubluje przekazu.',
+            'Skonsoliduj powtarzające się sformułowania w jedną sekcję lub zróżnicuj etykiety pod konkretny kontekst.')
+    if rule=='TW-GRAPHIC-DUPLICATE':
+        add('duplicate-visual','Powtarzająca się identyczna forma graficzna obniża czytelność wizualną widoku.',.87,evidence,
+            'Sprawdź, czy te same ilustracje SVG/obrazy/bloki wizualne nie są powielane na jednym widoku.',
+            'Usuń nadmiarowe duplikaty graficzne lub zastąp je dedykowaną wizualizacją procesu.')
     cat=BY_RULE.get(rule)
     if not hypotheses:
         add('needs-discriminating-test', ' / '.join(cat['possible_causes']) if cat else 'Przyczyna nie została ustalona z dostępnych dowodów.',

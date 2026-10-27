@@ -13,6 +13,20 @@ CANDIDATES={"chrome":["google-chrome","google-chrome-stable"],
             "edge":["microsoft-edge","microsoft-edge-stable"],"brave":["brave-browser"]}
 
 
+def find_chromium(pw: Any = None) -> str | None:
+    env_exe = os.environ.get("CHROMIUM_EXECUTABLE")
+    if env_exe and Path(env_exe).exists():
+        return env_exe
+    if pw is not None:
+        try:
+            if Path(pw.chromium.executable_path).exists():
+                return pw.chromium.executable_path
+        except Exception:
+            pass
+    found = [shutil.which(x) for x in ("google-chrome", "google-chrome-stable", "chromium-browser", "chromium") if shutil.which(x)]
+    return next((p for p in found if not p.startswith("/snap/")), found[0] if found else None)
+
+
 def browser_env() -> dict[str,str]:
     # Do not hand local LLM, cloud or repository credentials to browser children.
     allowed={"PATH","HOME","DISPLAY","LANG","LC_ALL","XDG_RUNTIME_DIR","DBUS_SESSION_BUS_ADDRESS",
@@ -33,7 +47,7 @@ async def launch(pw: Any, name: str, cfg: dict) -> AsyncIterator[tuple[Any,str]]
                 exe=cfg["executables"].get(name)
                 if not exe:
                     if name=="chromium":
-                        exe=pw.chromium.executable_path if Path(pw.chromium.executable_path).exists() else next((shutil.which(x) for x in ("chromium","google-chrome","google-chrome-stable","chromium-browser") if shutil.which(x)),None)
+                        exe=find_chromium(pw)
                     else:
                         exe=next((shutil.which(x) for x in CANDIDATES[name] if shutil.which(x)),None)
                 if not exe or not Path(exe).exists():raise RuntimeError(f"browser unavailable: {name} (binary not found; run 'playwright install {name}' or configure in cfg['executables'])")

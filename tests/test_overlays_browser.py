@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 from playwright.sync_api import sync_playwright
 
+from testwins.browser import find_chromium
 from testwins.config import load
 from testwins.detectors import detect
 
@@ -25,7 +26,7 @@ body{margin:0}button{width:100px;height:40px}
 @pytest.fixture(scope='module')
 def browser():
     with sync_playwright() as pw:
-        browser=pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_EXECUTABLE'),headless=True,args=['--no-sandbox'])
+        browser=pw.chromium.launch(executable_path=find_chromium(),headless=True,args=['--no-sandbox'])
         try: yield browser
         finally: browser.close()
 

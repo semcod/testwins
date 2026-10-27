@@ -3,6 +3,7 @@ from pathlib import Path
 import os
 import pytest
 from playwright.sync_api import sync_playwright
+from testwins.browser import find_chromium
 from testwins.config import load
 from testwins.detectors import detect
 
@@ -14,7 +15,7 @@ OPTIONS = dict(mask_selectors=[], max_elements=500, max_text_rects=1000,
 @pytest.fixture(scope='module')
 def browser():
     with sync_playwright() as pw:
-        browser = pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_EXECUTABLE'),
+        browser = pw.chromium.launch(executable_path=find_chromium(),
                                      headless=True, args=['--no-sandbox'])
         yield browser
         browser.close()
