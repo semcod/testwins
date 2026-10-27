@@ -78,3 +78,63 @@ def test_auth_form_compliant():
     auth_rules = {f['rule'] for f in res if f['rule'].startswith('TW-AUTH-FORM')}
     assert not auth_rules
 
+
+def test_duplicate_text_detected_across_distinct_elements():
+    s = snapshot()
+    s['content_blocks'] = [
+        dict(selector='#hero-badge', ancestors=['main'], tag='span', kind='direct',
+             text='15 zł/h pracy agenta/humanoida', rect=rect(10, 10), visibleRect=rect(10, 10)),
+        dict(selector='#feature-title', ancestors=['main', 'ul', 'li'], tag='b', kind='direct',
+             text='15 zł/h pracy agenta/humanoida', rect=rect(10, 200), visibleRect=rect(10, 200)),
+    ]
+    res = rules(s)
+    dup = [f for f in res if f['rule'] == 'TW-TEXT-DUPLICATE']
+    assert len(dup) == 1
+    assert dup[0]['details']['count'] == 2
+    assert set(dup[0]['selectors']) == {'#hero-badge', '#feature-title'}
+
+
+def test_duplicate_text_ignores_same_selector_and_ancestors():
+    s = snapshot()
+    s['content_blocks'] = [
+        dict(selector='#p1', ancestors=['main'], tag='p', kind='block',
+             text='Stała stawka 15 zł netto/h pracy agenta.', rect=rect(10, 10), visibleRect=rect(10, 10)),
+        dict(selector='#p1', ancestors=['main'], tag='p', kind='direct',
+             text='Stała stawka 15 zł netto/h pracy agenta.', rect=rect(10, 10), visibleRect=rect(10, 10)),
+        dict(selector='#p1 > strong', ancestors=['main', '#p1'], tag='strong', kind='direct',
+             text='Stała stawka 15 zł netto/h pracy agenta.', rect=rect(10, 10), visibleRect=rect(10, 10)),
+    ]
+    res = rules(s)
+    assert not [f for f in res if f['rule'] == 'TW-TEXT-DUPLICATE']
+
+
+def test_duplicate_short_cta_label_detected_when_excessive():
+    s = snapshot()
+    s['content_blocks'] = [
+        dict(selector=f'#card-{i}', ancestors=['main'], tag='span', kind='direct',
+             text='Sprawdź korzyść', rect=rect(10, i * 40), visibleRect=rect(10, i * 40))
+        for i in range(4)
+    ]
+    res = rules(s)
+    dup = [f for f in res if f['rule'] == 'TW-TEXT-DUPLICATE']
+    assert len(dup) == 1
+    assert dup[0]['details']['count'] == 4
+
+
+def test_duplicate_graphics_detected():
+    s = snapshot()
+    s['graphics'] = [
+        dict(selector='#svg-1', ancestors=['main'], tag='svg', kind='svg',
+             signature='svg:<svg viewBox="0 0 160 90"><path d="M10 80H150"/></svg>',
+             rect=rect(10, 10, 160, 90), visibleRect=rect(10, 10, 160, 90)),
+        dict(selector='#svg-2', ancestors=['main'], tag='svg', kind='svg',
+             signature='svg:<svg viewBox="0 0 160 90"><path d="M10 80H150"/></svg>',
+             rect=rect(10, 200, 160, 90), visibleRect=rect(10, 200, 160, 90)),
+    ]
+    res = rules(s)
+    dup = [f for f in res if f['rule'] == 'TW-GRAPHIC-DUPLICATE']
+    assert len(dup) == 1
+    assert dup[0]['details']['count'] == 2
+    assert set(dup[0]['selectors']) == {'#svg-1', '#svg-2'}
+
+

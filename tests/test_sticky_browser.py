@@ -8,6 +8,7 @@ from unittest.mock import patch
 import pytest
 from playwright.async_api import Page, async_playwright
 
+from testwins.browser import find_chromium
 from testwins.config import load, validate
 from testwins.detectors import detect
 from testwins.frames import resolve
@@ -41,7 +42,7 @@ def config(frame=False):
     if frame:
         cfg['frames'] = [{'id': 'guide', 'selector': '#guide'}]
         cfg['routes'][0]['frames'] = ['guide']
-    if os.environ.get('CHROMIUM_EXECUTABLE'): cfg['executables']['chromium'] = os.environ['CHROMIUM_EXECUTABLE']
+    if find_chromium(): cfg['executables']['chromium'] = find_chromium()
     return validate(cfg)
 
 
@@ -56,7 +57,7 @@ async def observe(page, cfg):
 
 async def browser_check(callback):
     async with async_playwright() as pw:
-        browser = await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_EXECUTABLE'), headless=True, args=['--no-sandbox'])
+        browser = await pw.chromium.launch(executable_path=find_chromium(), headless=True, args=['--no-sandbox'])
         page = await browser.new_page(viewport={'width': 600, 'height': 600})
         try: await callback(page)
         finally: await browser.close()

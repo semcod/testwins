@@ -1,7 +1,7 @@
 /* All inputs are rendered DOM/layout. No application source, network log or private JS state. */
 (opts) => {
   const started = performance.now();
-  const nodes = [], texts = [], masks = [], gaps = [], links = [];
+  const nodes = [], texts = [], masks = [], gaps = [], links = [], content_blocks = [], graphics = [];
   const roots = [document]; const seen = new Set();
   let truncated = false;
   const visual=window.visualViewport,ox=visual?.offsetLeft||0,oy=visual?.offsetTop||0;
@@ -95,6 +95,7 @@
     const root=roots[ri];
     for(const el of root.querySelectorAll('*')) {
       if(seen.has(el))continue;seen.add(el);
+      if(el.namespaceURI==='http://www.w3.org/2000/svg'&&!['svg','a','text','tspan','foreignObject'].includes(el.localName))continue;
       if(seen.size>opts.max_elements*4){truncated=true;break;}
       if(el.shadowRoot) roots.push(el.shadowRoot);
       if(nodes.length>=opts.max_elements){truncated=true;break;}
@@ -181,6 +182,39 @@
       if(fullyClipped&&n.focused&&!n.disabled&&!n.inert)
         gaps.push({kind:'focused_clipped_control',selector,reason:'Focused content has an empty CSS clip path; visual focus cannot be observed.'});
       if(privateNode||fullyClipped)continue;
+      const inChrome=!!el.closest('header,nav,footer,table,select,option,code,pre,kbd,samp,svg,script,style,template,noscript,[role=tablist]');
+      if(!inChrome&&content_blocks.length<opts.max_elements){
+        const direct=Array.from(el.childNodes).filter(c=>c.nodeType===Node.TEXT_NODE).map(c=>c.textContent.trim()).filter(Boolean).join(' ').replace(/\s+/g,' ').trim();
+        if(direct.length>=14){
+          content_blocks.push({selector,ancestors,tag:el.localName,kind:'direct',text:direct.slice(0,240),rect:r,visibleRect});
+        }
+        if(el.matches('p,h1,h2,h3,h4,h5,h6,li,summary,figcaption,blockquote,dt,dd')&&!el.querySelector('p,h1,h2,h3,h4,h5,h6,li,ul,ol,table,section,article,div')){
+          const full=(el.innerText||el.textContent||'').replace(/\s+/g,' ').trim();
+          if(full.length>=18&&full!==direct){
+            content_blocks.push({selector,ancestors,tag:el.localName,kind:'block',text:full.slice(0,240),rect:r,visibleRect});
+          }
+        }
+      }
+      const inGraphicChrome=!!el.closest('header,nav,footer,script,style,template,noscript');
+      if(!inGraphicChrome&&graphics.length<opts.max_elements&&r.width>=48&&r.height>=48){
+        let gKind=null,gSig=null;
+        if(el.localName==='svg'){
+          gKind='svg';
+          gSig='svg:'+el.outerHTML.replace(/\s+/g,' ').replace(/\s+(?:id|class|data-[a-z0-9_-]+)="[^"]*"/gi,'').trim().slice(0,400);
+        }else if(el.localName==='img'&&(el.currentSrc||el.getAttribute('src'))){
+          gKind='img';
+          gSig='img:'+(el.currentSrc||el.getAttribute('src')||'').trim().slice(0,300);
+        }else if(el.localName==='canvas'){
+          gKind='canvas';
+          gSig='canvas:'+Math.round(r.width)+'x'+Math.round(r.height)+':'+(el.getAttribute('data-chart')||el.getAttribute('aria-label')||'');
+        }else if(el.hasAttribute('data-visual')||(el.localName==='figure'&&!el.querySelector('svg,img,canvas'))){
+          gKind=el.hasAttribute('data-visual')?'visual':'figure';
+          gSig=gKind+':'+(el.getAttribute('data-visual')||'')+':'+Array.from(el.querySelectorAll('*')).map(c=>c.localName).join(',').slice(0,300);
+        }
+        if(gKind&&gSig){
+          graphics.push({selector,ancestors,tag:el.localName,kind:gKind,signature:gSig,rect:r,visibleRect});
+        }
+      }
       let protectedFromSticky=fragmentTarget!==null&&contains(fragmentTarget,el);
       for(let e=el;e;e=parent(e)){
         if(e.matches('h1,h2,h3,h4,h5,h6,[role=heading],button,a,input,select,textarea,summary,label,[role=button],[role=link],[role=checkbox],[role=tab],[role=menuitem],[tabindex],[contenteditable],:target,:focus')){
@@ -360,6 +394,6 @@
     screen:{width:screen.width,height:screen.height},dpr:devicePixelRatio,
     scroll:{x:scrollX+ox,y:scrollY+oy,layoutX:scrollX,layoutY:scrollY},document:{width:document.documentElement.scrollWidth,height:document.documentElement.scrollHeight},
     hasViewportMeta:!!document.querySelector('meta[name=viewport]'),fontsStatus:document.fonts.status,
-    title:document.title.slice(0,200),nodes,texts,masks,alignments,overlays,sticky_regions,links:Array.from(new Set(links)).slice(0,200),
+    title:document.title.slice(0,200),nodes,texts,content_blocks,graphics,masks,alignments,overlays,sticky_regions,links:Array.from(new Set(links)).slice(0,200),
     gaps,truncated,html,elapsedMs:Math.round(performance.now()-started)};
 }

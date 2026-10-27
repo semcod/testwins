@@ -11,6 +11,7 @@ import pytest
 from PIL import Image
 from playwright.async_api import Page, async_playwright
 
+from testwins.browser import find_chromium
 from testwins.config import load, validate
 from testwins.frames import resolve
 from testwins.runner import act, collect, paint, run, capture_observation
@@ -34,7 +35,7 @@ def config(touch=False):
     cfg['capture'].update(repeats=1,scroll_tiles=1,settle_ms=0,ready_selector='body')
     cfg['axe']['enabled']=False
     cfg['frames']=[{'id':'guide','selector':'#guide'}];cfg['routes'][0]['frames']=['guide']
-    if os.environ.get('CHROMIUM_EXECUTABLE'):cfg['executables']['chromium']=os.environ['CHROMIUM_EXECUTABLE']
+    if find_chromium():cfg['executables']['chromium']=find_chromium()
     return validate(cfg)
 
 
@@ -42,7 +43,7 @@ def config(touch=False):
 def test_frame_pixels_masks_and_trusted_input_use_child_coordinates(tmp_path,touch):
     async def check():
         async with async_playwright() as pw:
-            browser=await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_EXECUTABLE'),headless=True,args=['--no-sandbox'])
+            browser=await pw.chromium.launch(executable_path=find_chromium(),headless=True,args=['--no-sandbox'])
             page=await browser.new_page(viewport={'width':400,'height':400},has_touch=touch)
             await page.set_content(markup())
             cfg=config(touch);surface=await resolve(page,cfg,'guide')
@@ -134,7 +135,7 @@ def test_frame_pixels_stay_masked_after_capture_limit(tmp_path):
 def test_subpixel_flex_parent_does_not_falsely_report_frame_clipped():
     async def check():
         async with async_playwright() as pw:
-            browser=await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_EXECUTABLE'),headless=True,args=['--no-sandbox'])
+            browser=await pw.chromium.launch(executable_path=find_chromium(),headless=True,args=['--no-sandbox'])
             page=await browser.new_page(viewport={'width':820,'height':1180})
             html_doc=(
                 '<!doctype html><style>html,body{margin:0;height:100%;overflow:hidden}'
