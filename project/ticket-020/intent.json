@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1.0.0",
+  "ticketId": "ticket-020",
+  "title": "Pyte 2D terminal surface inspector and raw/resize PTY session driver",
+  "owner": "antigravity",
+  "workstream": "terminal-surface",
+  "status": "IN_PROGRESS",
+  "phase": "EDIT",
+  "allowedPaths": [
+    "project/ticket-020/**",
+    "testwins/integrations/terminal.py",
+    "testwins/tasks.py",
+    "tests/test_terminal_surface.py"
+  ]
+}

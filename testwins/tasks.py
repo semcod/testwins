@@ -16,7 +16,7 @@ from .util import atomic_json, digest, file_digest, utc_now
 from .staging import stage
 
 FIELDS = {'schema','id','backend','files','url','dry_run','step_timeout_ms','timeout_seconds','steps',
-          'command','args','cwd','max_output_bytes','templates','expected_exit_code'}
+          'command','args','cwd','max_output_bytes','templates','expected_exit_code','cols','rows','color'}
 
 
 def validate_task(task: Any) -> dict:
@@ -46,6 +46,14 @@ def validate_task(task: Any) -> dict:
         if task.get('dry_run'): raise ValueError('dry_run is currently supported only for TestQL')
     if 'expected_exit_code' in task and (type(task['expected_exit_code']) is not int or not 0<=task['expected_exit_code']<=255):
         raise ValueError('Invalid expected exit code')
+    if any(k in task for k in ('cols','rows','color')) and task['backend']!='terminal':
+        raise ValueError('cols/rows/color are supported only for terminal backend')
+    if 'cols' in task and (type(task['cols']) is not int or not 20<=task['cols']<=500):
+        raise ValueError('Invalid cols')
+    if 'rows' in task and (type(task['rows']) is not int or not 5<=task['rows']<=200):
+        raise ValueError('Invalid rows')
+    if 'color' in task and type(task['color']) is not bool:
+        raise ValueError('color must be boolean')
     return task
 
 
