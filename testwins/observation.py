@@ -17,10 +17,10 @@ def layout_signature(snapshot: dict) -> str:
     geometry = {k: snapshot.get(k) for k in (
         'viewport', 'visualViewport', 'layoutViewport', 'document', 'scroll',
         'dpr', 'masks', 'alignments', 'scope')}
-    for surface in ('nodes', 'texts'):
+    for surface in ('nodes', 'texts', 'content_blocks', 'graphics'):
         geometry[surface] = [{k: n.get(k) for k in (
             'selector', 'rect', 'visibleRect', 'targetSize')}
-            for n in snapshot[surface]]
+            for n in snapshot.get(surface, [])]
     return digest(_geometry(geometry))
 
 
@@ -29,16 +29,18 @@ def assess_stability(before: dict, after: dict) -> dict:
         result = {k: s.get(k) for k in ('hasViewportMeta', 'fontsStatus', 'truncated', 'gaps', 'overlays', 'sticky_regions')}
         # Retain hit tests, focus, disabled/inert, clipping flags and computed
         # styles. Equal boxes alone do not establish equal detector evidence.
-        for surface in ('nodes', 'texts'):
+        for surface in ('nodes', 'texts', 'content_blocks', 'graphics'):
             result[surface] = [{k: v for k, v in n.items()
-                                if k not in ('rect', 'visibleRect', 'targetSize', 'text', 'name')}
-                               for n in s[surface]]
+                                if k not in ('rect', 'visibleRect', 'targetSize', 'text', 'name', 'signature')}
+                               for n in s.get(surface, [])]
         return digest(result)
 
     def content(s):
         return digest([s.get('title'),
-                       [(t.get('selector'), t.get('text')) for t in s['texts']],
-                       [(n.get('selector'), n.get('name')) for n in s['nodes']]])
+                       [(t.get('selector'), t.get('text')) for t in s.get('texts', [])],
+                       [(n.get('selector'), n.get('name')) for n in s.get('nodes', [])],
+                       [(b.get('selector'), b.get('kind'), b.get('text')) for b in s.get('content_blocks', [])],
+                       [(g.get('selector'), g.get('kind'), g.get('signature')) for g in s.get('graphics', [])]])
 
     return {'method': 'geometry-and-state/v1',
             'layout': layout_signature(before) == layout_signature(after),

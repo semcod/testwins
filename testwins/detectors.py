@@ -67,6 +67,8 @@ def detect(snapshot: dict, cfg: dict, device: dict) -> list[dict]:
                 u=texts[j]
                 if t["selector"]==u["selector"]: continue
                 if t["selector"] in u.get("ancestors",[]) or u["selector"] in t.get("ancestors",[]): continue
+                if bool(t.get("inert") or t.get("ariaHidden")) != bool(u.get("inert") or u.get("ariaHidden")):
+                    continue
                 t_ov = next((o for o in snapshot.get("overlays", []) if o.get("state") == "active" and (t["selector"] == o.get("overlay") or o.get("overlay") in t.get("ancestors", []))), None)
                 if t_ov and any(c["selector"] == u["selector"] or c["selector"] in u.get("ancestors", []) for c in t_ov.get("coverage", [])):
                     continue

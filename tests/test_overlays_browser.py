@@ -112,3 +112,27 @@ def test_only_explicit_background_controls_are_authorized(page):
     snapshot,findings=observe(page)
     assert not occluded(findings,'#background')
     assert occluded(findings,'#other')
+
+
+def test_fullscreen_modal_over_inert_background_passes_contract_without_text_overlap(page):
+    page.set_content('''<!doctype html><style>
+      body{margin:0;font-family:sans-serif}
+      #workspace{padding:24px}
+      #modal{position:fixed;inset:0;background:rgba(11,16,32,0.85);display:flex;align-items:flex-start;justify-content:flex-start;padding:24px;z-index:10}
+      #dialog-card{background:#18223a;color:#f8fafc;padding:16px}
+    </style>
+    <main id="workspace" inert>
+      <p id="bg-text">Workspace background pane output overlapping modal coordinates</p>
+      <button id="open-palette" aria-controls="modal" aria-expanded="true">Palette</button>
+      <button id="bg-btn">Pane Action</button>
+    </main>
+    <div id="modal" role="dialog" aria-modal="true">
+      <div id="dialog-card">
+        <p id="modal-title">Command Palette Overlay</p>
+        <button id="close-modal">Close</button>
+      </div>
+    </div>''')
+    contract={'id':'palette','trigger':'#open-palette','overlay':'#modal','background':['#bg-btn']}
+    snapshot,findings=observe(page,contract)
+    assert snapshot['overlays'][0]['state']=='active'
+    assert not [f for f in findings if f['rule'] in ('TW-OVERLAY-CONTRACT','TW-TEXT-OVERLAP','TW-CONTROL-OCCLUDED')]

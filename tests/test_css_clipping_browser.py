@@ -81,3 +81,12 @@ def test_focused_clipped_control_remains_evidence_and_blocks_complete_observatio
     assert not next(n for n in visible['nodes'] if n['selector'] == '#control')['fullyClipped']
     assert '#control' in {t['selector'] for t in visible['texts']}
     assert not visible['gaps']
+
+
+def test_direct_text_inside_scrollable_pre_in_overflow_hidden_pane_is_not_clipped(page):
+    lines = "\\n".join(f"line-{i:02d}: standardized shell/hud output" for i in range(30))
+    page.set_content(f'''<div id="pane" style="height:120px;overflow:hidden;display:flex;flex-direction:column">
+      <pre id="terminal" style="margin:0;height:120px;overflow-y:auto">{lines}</pre>
+    </div>''')
+    snapshot = page.evaluate(COLLECTOR, OPTIONS)
+    assert not [f for f in findings(snapshot) if f['rule'] == 'TW-TEXT-CLIPPED']
