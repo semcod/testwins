@@ -17,7 +17,11 @@ from typing import Any
 from ..util import atomic_json, confined
 
 TOP_LEFT_CORNERS = {"┌": ("┐", "└", "┘"), "╭": ("╮", "╰", "╯"), "┏": ("┓", "┗", "┛"), "╔": ("╗", "╚", "╝")}
-RIGHT_BORDERS = {"│", "┃", "║", "┐", "┘", "╮", "╯", "┓", "┛", "╗", "╝", "┤", "┫", "╣"}
+LEFT_VERTICALS = {"│", "┃", "║", "├", "┣", "╠"}
+RIGHT_VERTICALS = {"│", "┃", "║", "┤", "┫", "╣"}
+ALL_CORNERS_AND_WALLS = {
+    "┌", "┐", "└", "┘", "╭", "╮", "╰", "╯", "┏", "┓", "┗", "┛", "╔", "╗", "╚", "╝", "│", "┃", "║",
+}
 
 
 def _normalize_color(value: Any) -> str:
@@ -141,7 +145,14 @@ class PyteTerminalSurface:
                 r1 = -1
                 for cand_r in range(r0 + 1, self.rows):
                     if grid[cand_r][c0] == bl_ch and grid[cand_r][c1] == br_ch:
-                        r1 = cand_r
+                        if (
+                            all(grid[rr][c0] in LEFT_VERTICALS for rr in range(r0 + 1, cand_r))
+                            and all(grid[rr][c1] in RIGHT_VERTICALS for rr in range(r0 + 1, cand_r))
+                            and not any(ch2 in ALL_CORNERS_AND_WALLS for ch2 in grid[cand_r][c0 + 1 : c1])
+                        ):
+                            r1 = cand_r
+                        break
+                    if grid[cand_r][c0] not in LEFT_VERTICALS or grid[cand_r][c1] not in RIGHT_VERTICALS:
                         break
                 if r1 != -1:
                     corner_cell = self.cell(r0, c0)
@@ -179,15 +190,48 @@ class PyteTerminalSurface:
             )
             return findings
 
-        # Check unclosed top-left box corners (clipped or broken pane/modal border)
-        matched_corners = {(b["top"], b["left"]) for b in self.detect_boxes()}
+        # Check unclosed top-left box corners (clipped or broken pane/modal border),
+        # accounting for background pane corners occluded by a foreground modal box.
+        boxes = self.detect_boxes()
+        matched_corners = {(b["top"], b["left"]) for b in boxes}
+
+        def _in_any_box(row: int, col: int) -> bool:
+            return any(
+                b["top"] <= row <= b["bottom"] and b["left"] <= col <= b["right"]
+                for b in boxes
+            )
+
+        def _is_occluded_background_box(r0: int, c0: int) -> bool:
+            if not boxes:
+                return False
+            tr_ch, bl_ch, br_ch = TOP_LEFT_CORNERS[grid[r0][c0]]
+            cand_c1 = grid[r0].find(tr_ch, c0 + 1)
+            cand_r1 = next(
+                (rr for rr in range(r0 + 1, self.rows) if grid[rr][c0] == bl_ch),
+                -1,
+            )
+            if cand_c1 != -1 and cand_r1 != -1 and _in_any_box(cand_r1, cand_c1):
+                return True
+            if cand_r1 != -1:
+                bot_c1 = grid[cand_r1].find(br_ch, c0 + 1)
+                if bot_c1 != -1 and _in_any_box(r0, bot_c1):
+                    return True
+            if cand_c1 != -1:
+                right_r1 = next(
+                    (rr for rr in range(r0 + 1, self.rows) if grid[rr][cand_c1] == br_ch),
+                    -1,
+                )
+                if right_r1 != -1 and _in_any_box(right_r1, c0):
+                    return True
+            return False
+
         for r in range(self.rows):
             for c in range(self.cols):
                 if grid[r][c] in TOP_LEFT_CORNERS and (r, c) not in matched_corners:
-                    # Ignore corners inside text strings unless adjacent to horizontal rule
+                    # Ignore corners inside text strings unless adjacent to horizontal & vertical rules
                     horiz = c + 1 < self.cols and grid[r][c + 1] in {"─", "━", "═"}
                     vert = r + 1 < self.rows and grid[r + 1][c] in {"│", "┃", "║"}
-                    if horiz and vert:
+                    if horiz and vert and not _is_occluded_background_box(r, c):
                         findings.append(
                             {
                                 "rule": "TW-TUI-BOX-BROKEN",

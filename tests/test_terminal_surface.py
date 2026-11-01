@@ -47,6 +47,31 @@ def test_pyte_surface_decodes_truecolor_boxes_and_detects_parity_defects() -> No
     defects = broken.audit_tui_parity()
     assert any(f["rule"] == "TW-TUI-BOX-BROKEN" for f in defects)
 
+    # Floating modal overlay occluding 2x2 pane inner corners does NOT trigger false TW-TUI-BOX-BROKEN
+    modal_surface = PyteTerminalSurface(cols=40, rows=12)
+    grid_chars = [[" " for _ in range(40)] for _ in range(12)]
+    for r0, c0, r1, c1 in ((0, 0, 5, 19), (0, 20, 5, 39), (6, 0, 11, 19), (6, 20, 11, 39)):
+        grid_chars[r0][c0], grid_chars[r0][c1] = "┌", "┐"
+        grid_chars[r1][c0], grid_chars[r1][c1] = "└", "┘"
+        for cc in range(c0 + 1, c1):
+            grid_chars[r0][cc] = grid_chars[r1][cc] = "─"
+        for rr in range(r0 + 1, r1):
+            grid_chars[rr][c0] = grid_chars[rr][c1] = "│"
+    # Draw centered CommandOverlay over (3..8, 10..29), occluding inner corners of all 4 panes
+    mr0, mc0, mr1, mc1 = 3, 10, 8, 29
+    for rr in range(mr0, mr1 + 1):
+        for cc in range(mc0, mc1 + 1):
+            grid_chars[rr][cc] = " "
+    grid_chars[mr0][mc0], grid_chars[mr0][mc1] = "┌", "┐"
+    grid_chars[mr1][mc0], grid_chars[mr1][mc1] = "└", "┘"
+    for cc in range(mc0 + 1, mc1):
+        grid_chars[mr0][cc] = grid_chars[mr1][cc] = "─"
+    for rr in range(mr0 + 1, mr1):
+        grid_chars[rr][mc0] = grid_chars[rr][mc1] = "│"
+    modal_surface.feed("\x1b[2J\x1b[H" + "\r\n".join("".join(row) for row in grid_chars))
+    assert len(modal_surface.detect_boxes()) == 1
+    assert modal_surface.audit_tui_parity() == []
+
 
 def test_terminal_session_raw_keys_and_live_pty_resize() -> None:
     pytest.importorskip("pyte")
