@@ -160,7 +160,7 @@ def test_metrics_real_contract_with_stub_transport():
 def test_report_single_failed_check_is_visible_in_manifest_junit(tmp_path):
     c=load();c.update(matrix='chromium',routes=[],journeys=[{'id':'flow','path':'/','steps':[step()]}])
     c['devices']={'desktop':c['devices']['desktop']};c['capture']['repeats']=1
-    r=report('failed');r.update(run_id='unit',schema='testwins.report/v1',created='2026-09-22',project='p',tool_version='0.4.0',config_hash='a'*64,matrix='chromium',environment={},occurrences=[])
+    r=report('failed');r.update(run_id='unit',schema='testwins.report/v1',created='2026-09-22',project='p',tool_version='0.4.1',config_hash='a'*64,matrix='chromium',environment={},occurrences=[])
     r['cells'][0].update(browser='chromium',device='desktop',version='stub',transport='cdp',errors=[],observed_scenes=1,expected_scenes=1)
     finalize(tmp_path,r,c)
     assert r['gate']['exit_code']==1 and r['cells'][0]['status']=='failed'
@@ -274,3 +274,15 @@ def test_packaged_profiles_validate_and_preserve_all_personas():
     assert len(large['journeys'])==len(small['journeys'])==6
     assert {j['id'] for j in large['journeys']}=={j['id'] for j in small['journeys']}
     assert len(large['devices'])==2 and len(small['devices'])==1
+
+
+def test_version_ssot_consistent():
+    import tomllib
+    import testwins
+    repo=Path(__file__).resolve().parents[1]
+    ver=(repo/'VERSION').read_text('utf-8').strip()
+    pyproj=tomllib.loads((repo/'pyproject.toml').read_text('utf-8'))['project']['version']
+    summary=json.loads((repo/'verification/summary.json').read_text('utf-8'))['version']
+    readme=(repo/'README.md').read_text('utf-8')
+    assert ver==pyproj==summary==testwins.__version__
+    assert f'# Testwins {ver}' in readme

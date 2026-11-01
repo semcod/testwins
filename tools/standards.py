@@ -22,7 +22,7 @@ def check(run: Path, upstream: Path, out: Path) -> dict:
     spec=importlib.util.spec_from_file_location('testwins_trusted_upstream_logs',checker)
     module=importlib.util.module_from_spec(spec);sys.modules[spec.name]=module;spec.loader.exec_module(module)
     bundle,contract_sha=module.load_contract(upstream)
-    codes={p.stem for p in (ROOT/'errors').glob('*.md')}
+    codes={p.stem for p in (ROOT/'errors').glob('*.md') if p.name!='README.md'}
     catalog=module.load_error_documents(ROOT,bundle,directory_relative='errors',declared=codes)
     previous='0'*64;prior={};count=0
     from jsonschema import Draft202012Validator,FormatChecker

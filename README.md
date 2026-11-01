@@ -1,4 +1,4 @@
-# Testwins 0.4.0
+# Testwins 0.4.1
 
 **Jedna paczka do testów GUI, scenariuszy TestQL, shell/terminala, osobnych kontraktów API i ciągłej obserwacji.**
 To scalone wydanie wcześniejszych Testwins 0.2/0.3 oraz migracji `twin_ux` / Clonerd.
@@ -45,7 +45,7 @@ Przykład live domyślnie obserwuje **3 trasy x 3 profile x Chromium**, nie trzy
 make bootstrap
 . .venv/bin/activate
 # Alternatywa bez bootstrap, po utworzeniu i aktywowaniu venv:
-python -m pip install './dist/testwins-0.4.0-py3-none-any.whl[live,terminal]'
+python -m pip install './dist/testwins-0.4.1-py3-none-any.whl[live,terminal]'
 python -m playwright install chromium
 
 testwins --version

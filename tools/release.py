@@ -30,7 +30,7 @@ def package():
     dist=ROOT/'dist';archive=dist/f'testwins-{VERSION}-final.zip'
     artifacts=[dist/f'testwins-{VERSION}-py3-none-any.whl',dist/f'testwins-{VERSION}.tar.gz']
     if not all(p.is_file() for p in artifacts):raise RuntimeError('Expected distributions not created')
-    excluded={'.git','.venv','.auth','.testwins','.pytest_cache','__pycache__','artifacts','baselines','build','dist',
+    excluded={'.git','.worktrees','.koru','.governance','.planfile','.subactor','.venv','.auth','.testwins','.pytest_cache','.ruff_cache','__pycache__','artifacts','baselines','build','dist',
               '.testwins-live-secret','.testwins-integration-backup'}
     selected=[]
     for p in sorted(ROOT.rglob('*')):
