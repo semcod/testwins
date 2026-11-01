@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "1.0.0",
+  "ticketId": "ticket-019",
+  "title": "Exclude errors/README.md in standards checker, guard optional cv2/numpy/typer test deps, and align version SSOT",
+  "owner": "antigravity",
+  "workstream": "release-and-standards",
+  "status": "IN_PROGRESS",
+  "phase": "EDIT",
+  "allowedPaths": [
+    "project/ticket-019/**",
+    "tools/standards.py",
+    "tools/release.py",
+    "README.md",
+    "verification/summary.json",
+    "tests/test_extensions.py",
+    "tests/live/test_live_io.py",
+    "tests/test_release_contracts.py"
+  ]
+}

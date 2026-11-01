@@ -139,6 +139,7 @@ def test_vision_invented_selector():
     with pytest.raises(ValueError):validate_response({'findings':[f]},{'#real'},400,300)
 
 def test_opencv_actual(screenshot,tmp_path):
+    pytest.importorskip('cv2')
     assert len(contours(screenshot))>0
     tpl=tmp_path/'template.png';Image.open(screenshot).crop((25,35,125,105)).save(tpl)
     result=match_template(screenshot,tpl);assert result['found'] and result['score']>.99
@@ -146,10 +147,12 @@ def test_opencv_actual(screenshot,tmp_path):
     data=analyze(screenshot,tmp_path/'cv.json');assert data['defects']==[] and data['authority']=='none'
 
 def test_uniform_rgb_template_rejected(screenshot,tmp_path):
+    pytest.importorskip('cv2')
     tpl=tmp_path/'constant.png';Image.new('RGB',(20,20),(255,0,0)).save(tpl)
     with pytest.raises(ValueError,match='texture'):match_template(screenshot,tpl)
 
 def test_template_larger(screenshot,tmp_path):
+    pytest.importorskip('cv2')
     tpl=tmp_path/'large.png';Image.new('RGB',(401,301),'white').save(tpl)
     assert not match_template(screenshot,tpl)['found']
 
@@ -160,7 +163,7 @@ def test_nms_class_aware():
 
 def test_yolo_mock_adapter_tiles_and_offsets(tmp_path):
     """Fake detections exercise adapter coordinate logic; no weights/model inference are claimed."""
-    import numpy as np
+    np=pytest.importorskip('numpy')
     p=tmp_path/'long.png';Image.new('RGB',(400,2000),'white').save(p)
     weights=tmp_path/'fake.pt';weights.write_bytes(b'NOT A MODEL')
     calls=[]

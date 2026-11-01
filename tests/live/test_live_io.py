@@ -102,6 +102,7 @@ def test_wup_installer_no_overwrite(tmp_path):
 
 
 def test_wup_typer_adapter_has_watch_status_export_capacity():
+    pytest.importorskip('typer')
     from typer.testing import CliRunner
     spec=importlib.util.spec_from_file_location('wup_gui',ROOT/'integrations/wup/overlay/wup/gui_testwins.py');m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
     r=CliRunner().invoke(m.app,['--help']);assert r.exit_code==0
