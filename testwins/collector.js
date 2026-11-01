@@ -144,6 +144,7 @@
         occluded:0,hitSamples:0,covering:[],
         focused:el===document.activeElement || el===el.getRootNode().activeElement,
         ariaHiddenAncestor:!!el.closest('[aria-hidden="true"]'),
+        ariaModal:el.getAttribute('aria-modal')==='true' || el.localName==='dialog',
         inputType:el.localName==='input'?(el.getAttribute('type')||'text').toLowerCase():null,
         autocomplete:el.localName==='input'?(el.getAttribute('autocomplete')||''):null,
         formDetails:el.localName==='form'?{
@@ -183,7 +184,7 @@
         gaps.push({kind:'focused_clipped_control',selector,reason:'Focused content has an empty CSS clip path; visual focus cannot be observed.'});
       if(privateNode||fullyClipped)continue;
       const inChrome=!!el.closest('header,nav,footer,table,select,option,code,pre,kbd,samp,svg,script,style,template,noscript,[role=tablist]');
-      if(!inChrome&&content_blocks.length<opts.max_elements){
+      if(!inChrome&&!n.inert&&!n.ariaHiddenAncestor&&content_blocks.length<opts.max_elements){
         const direct=Array.from(el.childNodes).filter(c=>c.nodeType===Node.TEXT_NODE).map(c=>c.textContent.trim()).filter(Boolean).join(' ').replace(/\s+/g,' ').trim();
         if(direct.length>=14){
           content_blocks.push({selector,ancestors,tag:el.localName,kind:'direct',text:direct.slice(0,240),rect:r,visibleRect});
@@ -196,7 +197,7 @@
         }
       }
       const inGraphicChrome=!!el.closest('header,nav,footer,script,style,template,noscript');
-      if(!inGraphicChrome&&graphics.length<opts.max_elements&&r.width>=48&&r.height>=48){
+      if(!inGraphicChrome&&!n.inert&&!n.ariaHiddenAncestor&&graphics.length<opts.max_elements&&r.width>=48&&r.height>=48){
         let gKind=null,gSig=null;
         if(el.localName==='svg'){
           gKind='svg';
@@ -235,7 +236,7 @@
           const rr=rect(tr),vr=intersect(rr,ownClip);
           if(rr.width<1||rr.height<1||vr.width<1||vr.height<1)continue;
           let ancestorClipX=false,ancestorClipY=false;
-          let scrollableX=false,scrollableY=false;
+          let scrollableX=['auto','scroll'].includes(cs.overflowX),scrollableY=['auto','scroll'].includes(cs.overflowY);
           for(let p=parent(el);p;p=parent(p)){const pc=getComputedStyle(p),pr=rect(p.getBoundingClientRect());
             const cx=pr.x+p.clientLeft,cy=pr.y+p.clientTop;
             if(!scrollableX){
@@ -250,6 +251,7 @@
           }
           textElements.push(el);
           texts.push({selector,ancestors,rect:rr,visibleRect:vr,text:child.textContent.trim().slice(0,160),protectedFromSticky,
+            inert:n.inert,ariaHidden:n.ariaHiddenAncestor,
             intentional: intentional||cs.textOverflow==='ellipsis'||parseInt(cs.webkitLineClamp)>0,
             // Clip by viewport is navigation, not a defect. Only local CSS clipping is evaluated below.
             localClipX:ancestorClipX || (clipX && (rr.x<border.x-1||rr.x+rr.width>border.x+border.width+1)),
@@ -343,7 +345,11 @@
         throw new Error('Trigger aria-controls must reference the overlay id');
       if(document.querySelectorAll('#'+CSS.escape(overlay.id)).length!==1)
         throw new Error('Overlay id must be unique');
-      if(!visible(trigger)||!tn.interactive||tn.disabled||tn.inert||tn.ariaHiddenAncestor||!tn.hitSamples||tn.occluded)
+      const isModal=expanded==='true'&&(overlay.getAttribute('aria-modal')==='true'||['dialog','alertdialog'].includes(overlay.getAttribute('role'))||overlay.localName==='dialog');
+      const tCovers=hitElements.get(trigger)||[];
+      const triggerCoveredByModal=isModal&&tn.occluded>0&&tCovers.length===tn.occluded&&tCovers.every(top=>contains(overlay,top));
+      const triggerInertBehindModal=isModal&&(tn.inert||tn.ariaHiddenAncestor)&&!contains(overlay,trigger);
+      if(!visible(trigger)||!tn.interactive||tn.disabled||((tn.inert||tn.ariaHiddenAncestor)&&!triggerInertBehindModal)||(!tn.hitSamples&&!triggerInertBehindModal)||(tn.occluded&&!triggerCoveredByModal))
         throw new Error('Trigger must be visible, enabled and reachable');
       if(contains(trigger,overlay)||contains(overlay,trigger))throw new Error('Trigger and overlay must be separate');
       if((expanded==='true')!==visible(overlay))throw new Error('Overlay visibility must agree with aria-expanded');

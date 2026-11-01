@@ -123,8 +123,9 @@ class FrameSurface:
     async def screenshot(self, **kwargs):
         await self.verify()
         box = dict(self.box)
+        scale = kwargs.pop('scale', 'css')
         # Parent privacy masks also protect an unsuccessful moving-frame sample.
-        raw = await self.page.screenshot(**kwargs, mask=[self.page.locator(s) for s in self.masks], mask_color='#232323')
+        raw = await self.page.screenshot(scale=scale, **kwargs, mask=[self.page.locator(s) for s in self.masks], mask_color='#232323')
         await self.verify()
         if self.box != box:
             raise ValueError('frame_moved_during_screenshot')

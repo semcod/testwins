@@ -67,3 +67,17 @@ def test_clipping_flags_still_invalidate_detector_evidence():
     after['texts'][0]['localClipX'] = True
     result = assess_stability(before, after)
     assert result['layout'] and not result['state']
+
+
+def test_graphics_and_content_blocks_participate_in_stability():
+    rect = dict(x=0, y=0, width=64, height=64)
+    before = snapshot()
+    before['graphics'] = [dict(selector='#logo', kind='svg', signature='svg:v1', rect=rect.copy(), visibleRect=rect.copy())]
+    before['content_blocks'] = [dict(selector='#hero', kind='block', text='Hello Heyasa workspace', rect=rect.copy(), visibleRect=rect.copy())]
+    after = copy.deepcopy(before)
+    after['graphics'][0]['signature'] = 'svg:v2'
+    assert assess_stability(before, after) == {
+        'method': 'geometry-and-state/v1', 'layout': True, 'state': True, 'content': False}
+    moved = copy.deepcopy(before)
+    moved['graphics'][0]['rect']['x'] += 12
+    assert layout_signature(before) != layout_signature(moved)

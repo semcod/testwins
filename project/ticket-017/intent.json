@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0.0",
+  "ticketId": "ticket-017",
+  "title": "Collector scrollable direct-text, modal/inert isolation, stability surfaces, and HiDPI frame screenshots",
+  "owner": "antigravity",
+  "workstream": "collector",
+  "status": "IN_PROGRESS",
+  "phase": "EDIT",
+  "allowedPaths": [
+    "project/ticket-017/**",
+    "testwins/collector.js",
+    "testwins/detectors.py",
+    "testwins/observation.py",
+    "testwins/ux_probe.js",
+    "testwins/frames.py",
+    "tests/test_observation.py",
+    "tests/test_css_clipping_browser.py",
+    "tests/test_overlays_browser.py"
+  ]
+}

@@ -1,19 +1,34 @@
 ({action, selector, contract: spec, outcome}) => {
   window.__testwinsUX?.dispose();
   // No text, attribute values or geometry leave the page: only aggregate observations.
+  const queryAll = s => {
+    const out = [], roots = [document];
+    for (let i = 0; i < roots.length; i++) {
+      for (const el of roots[i].querySelectorAll(s)) out.push(el);
+      for (const el of roots[i].querySelectorAll('*')) if (el.shadowRoot) roots.push(el.shadowRoot);
+    }
+    return out;
+  };
+  const deepActive = () => {
+    let a = document.activeElement;
+    while (a && a.shadowRoot && a.shadowRoot.activeElement) a = a.shadowRoot.activeElement;
+    return a;
+  };
+  const parentOf = el => el.parentElement || (el.getRootNode() instanceof ShadowRoot ? el.getRootNode().host : null);
   const one = s => {
-    const xs = document.querySelectorAll(s);
+    const xs = queryAll(s);
     if (xs.length > 1) throw new Error('UX selector is ambiguous');
     return xs[0] || null;
   };
   const visible = el => {
     if (!el || !el.getClientRects().length) return false;
-    for (let x = el; x; x = x.parentElement) {
+    for (let x = el; x; x = parentOf(x)) {
       const st = getComputedStyle(x);
       if (st.visibility === 'hidden' || st.display === 'none' || Number(st.opacity) === 0) return false;
     }
     return true;
   };
+  const readText = el => ((typeof el.innerText === 'string' ? el.innerText : el.textContent) || '').replace(/\s+/g, ' ').trim();
   const feedback = () => {
     if (!spec.feedback) return false;
     const f = spec.feedback, el = one(f.selector);
@@ -21,7 +36,7 @@
     const normalize = s => s.replace(/\s+/g, ' ').trim();
     if (f.kind === 'visible') return true;
     if (f.kind === 'attribute') return el.getAttribute(f.name) === f.value;
-    const text = normalize(el.innerText || '');
+    const text = readText(el);
     return f.kind === 'text' ? text === normalize(f.value) : text.includes(normalize(f.value));
   };
   const signature = () => {
@@ -33,7 +48,7 @@
                            Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height)]);
   };
   const announce = () => {
-    for (let el = one(spec.feedback.selector); el; el = el.parentElement) {
+    for (let el = one(spec.feedback.selector); el; el = parentOf(el)) {
       const live = el.getAttribute('aria-live');
       if (live) return live === 'polite' || live === 'assertive';
       if (['status', 'alert', 'log'].includes(el.getAttribute('role'))) return true;
@@ -48,14 +63,14 @@
     if (!outcome) return false;
     const f = outcome;
     if (f.kind === 'changed') return document.body.innerText !== initialText;
-    const xs = document.querySelectorAll(f.selector);
+    const xs = queryAll(f.selector);
     if (f.kind === 'count') return xs.length === f.value;
     if (f.kind === 'count_min') return xs.length >= f.value;
     const el = one(f.selector);
     if (f.kind === 'hidden') return !visible(el);
     if (!el) return false;
     if (f.kind === 'visible') return visible(el);
-    if (f.kind === 'focused') return el === document.activeElement;
+    if (f.kind === 'focused') return el === deepActive();
     if (f.kind === 'checked') return !!el.checked;
     if (f.kind === 'unchecked') return !el.checked;
     if (f.kind === 'enabled') return !el.matches(':disabled') && el.getAttribute('aria-disabled') !== 'true';
@@ -63,7 +78,7 @@
     if (f.kind === 'value') return el.value === f.value;
     if (f.kind === 'attribute') return el.getAttribute(f.name) === f.value;
     const normalize = s => s.replace(/\s+/g, ' ').trim();
-    const text = normalize(el.textContent || '');
+    const text = readText(el);
     return f.kind === 'text' ? text === normalize(f.value) : text.includes(normalize(f.value));
   };
   const initialOutcome = outcomeMatches();
@@ -103,7 +118,8 @@
                   fill:['input'], select:['input','change'], press:['keydown']}[action];
   const onInput = event => {
     const el = one(selector);
-    if (began !== null || !el || !(event.target === el || el.contains(event.target))) return;
+    const path = typeof event.composedPath === 'function' ? event.composedPath() : [event.target];
+    if (began !== null || !el || !(path.includes(el) || el.contains(event.target))) return;
     began = performance.now(); result.input_observed = true;
   };
   for (const event of events) document.addEventListener(event, onInput, true);
@@ -121,7 +137,7 @@
     if (began !== null && windowMs > performance.now() - began)
       await new Promise(resolve => setTimeout(resolve, windowMs - (performance.now() - began)));
     sample();
-    if (spec.focus) result.focus_matches = one(spec.focus) === document.activeElement;
+    if (spec.focus) result.focus_matches = one(spec.focus) === deepActive();
     dispose();
     if (sampleError) throw new Error('UX observation failed');
     return result;
