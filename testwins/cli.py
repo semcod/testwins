@@ -99,7 +99,7 @@ def main(argv: list[str] | None=None) -> int:
             import importlib.metadata, importlib.util, shutil
             from pathlib import Path
             result={'package':'testwins','python':sys.version.split()[0], 'docker':shutil.which('docker'),'packages':{}}
-            for name in ('testwins','testql','playwright','subactor-subllm','litellm','opencv-python-headless','ultralytics','mss','pyautogui','pexpect'):
+            for name in ('testwins','testql','playwright','subactor-subllm','litellm','opencv-python-headless','ultralytics','mss','pyautogui','pexpect','pyte'):
                 try:result['packages'][name]=importlib.metadata.version(name)
                 except importlib.metadata.PackageNotFoundError:result['packages'][name]=None
             try:
@@ -131,7 +131,7 @@ def main(argv: list[str] | None=None) -> int:
             from .tasks import load_task,run_task,exit_code
             if a.command=='suite':
                 from .suite import run_suite
-                root=run_suite(a.file,a.output,trusted_local=a.trusted_local,image=a.image,network=a.network)
+                root=run_suite(a.file,a.output,project=a.project if '--project' in (argv or sys.argv[1:]) else None,trusted_local=a.trusted_local,image=a.image,network=a.network)
                 result=json.loads((root/'suite.json').read_text())
             else:
                 task=load_task(a.file) if a.command=='task' else {'schema':'testwins.task/v1','id':'scenario','backend':'testql','files':a.files,'url':a.url,'dry_run':a.dry_run}

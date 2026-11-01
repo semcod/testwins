@@ -1,5 +1,6 @@
 from __future__ import annotations
 import json
+import socket
 import threading
 import time
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
@@ -9,7 +10,8 @@ from urllib.parse import urlsplit,parse_qs
 
 class Server:
     def __init__(self,store,host='127.0.0.1',port=9067,*,allow_expose=False):
-        if host not in {'127.0.0.1','localhost'} and not allow_expose:raise ValueError('Non-loopback binding requires explicit --allow-expose; use loopback port publishing in Docker')
+        norm_host=host.strip('[]').lower()
+        if norm_host not in {'127.0.0.1','localhost','::1'} and not allow_expose:raise ValueError('Non-loopback binding requires explicit --allow-expose; use loopback port publishing in Docker')
         self.stop=threading.Event();self.store=store;self.thread=None;self.streams=threading.BoundedSemaphore(16)
         owner=self
         class Handler(BaseHTTPRequestHandler):
@@ -25,8 +27,12 @@ class Server:
                 self.end_headers();self.wfile.write(data)
             def do_GET(self):
                 # Basic DNS-rebinding guard. No cookies, tokens in query strings, write API or credentialed CORS.
-                hostname=self.headers.get('Host','').split(':')[0].lower()
-                if hostname not in {'127.0.0.1','localhost',host}:
+                raw_host=self.headers.get('Host','')
+                try:
+                    hostname=(urlsplit('//'+raw_host).hostname or '').lower()
+                except ValueError:
+                    hostname=''
+                if hostname not in {'127.0.0.1','localhost','::1',norm_host}:
                     self.reply(403,b'Invalid host','text/plain');return
                 p=urlsplit(self.path)
                 if p.path=='/':self.reply(200,Path(__file__).with_name('dashboard.html').read_bytes(),'text/html; charset=utf-8')
@@ -59,7 +65,9 @@ class Server:
                     finally:owner.streams.release();self.close_connection=True
                 else:self.reply(404,b'Not found','text/plain')
             def do_POST(self):self.reply(405,b'Read-only API','text/plain')
-        self.http=ThreadingHTTPServer((host,port),Handler);self.http.daemon_threads=False
+        class _HTTPServer(ThreadingHTTPServer):
+            address_family = socket.AF_INET6 if ':' in norm_host else socket.AF_INET
+        self.http=_HTTPServer((norm_host,port),Handler);self.http.daemon_threads=False
     @property
     def port(self):return self.http.server_port
     def start(self):self.thread=threading.Thread(target=self.http.serve_forever,daemon=True);self.thread.start()

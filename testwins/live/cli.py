@@ -14,6 +14,7 @@ def register(sub):
     w.add_argument('--host',default='127.0.0.1');w.add_argument('--allow-expose',action='store_true');w.add_argument('--quiet',action='store_true')
     s=sub.add_parser('live-status');s.add_argument('directory',type=Path)
     s=sub.add_parser('live-serve');s.add_argument('directory',type=Path);s.add_argument('--port',type=int,default=9067)
+    s.add_argument('--host',default='127.0.0.1');s.add_argument('--allow-expose',action='store_true')
     s=sub.add_parser('live-export');s.add_argument('directory',type=Path);s.add_argument('--output',type=Path,required=True);s.add_argument('--project',required=True);s.add_argument('--include-candidates',action='store_true')
     c=sub.add_parser('capacity');c.add_argument('--config',type=Path,required=True);c.add_argument('--seconds-per-cell',type=float,default=2);c.add_argument('--workers',type=int);c.add_argument('--interval',type=float,default=60)
     d=sub.add_parser('diagnose');d.add_argument('snapshot',type=Path);d.add_argument('--output',type=Path,required=True)
@@ -86,7 +87,7 @@ def dispatch(a):
         elif a.command=='live-serve':
             from .server import Server
             import time
-            s=Server(store,port=a.port);s.start()
+            s=Server(store,host=a.host,port=a.port,allow_expose=a.allow_expose);s.start()
             try:
                 while True:time.sleep(1)
             except KeyboardInterrupt:pass

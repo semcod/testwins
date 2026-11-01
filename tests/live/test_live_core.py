@@ -200,9 +200,12 @@ def test_output_lease(tmp_path):
 
 
 def test_catalog_honest_and_unique():
-    assert CATALOG['exhaustive'] is False;rows=CATALOG['classes'];assert len(rows)==96
-    assert len({r['id'] for r in rows})==96
-    assert sum(r['automatic'] for r in rows)==22
+    from testwins.live.diagnosis import BY_RULE
+    from testwins.live.scanner import BASE_RULES
+    assert CATALOG['exhaustive'] is False;rows=CATALOG['classes'];assert len(rows)==100
+    assert len({r['id'] for r in rows})==100
+    assert sum(r['automatic'] for r in rows)==26
+    assert BASE_RULES <= set(BY_RULE)
 
 
 def test_root_cause_min_content_not_source_blame():

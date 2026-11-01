@@ -29,7 +29,7 @@ def find_chromium(pw: Any = None) -> str | None:
 
 def browser_env() -> dict[str,str]:
     # Do not hand local LLM, cloud or repository credentials to browser children.
-    allowed={"PATH","HOME","DISPLAY","LANG","LC_ALL","XDG_RUNTIME_DIR","DBUS_SESSION_BUS_ADDRESS",
+    allowed={"PATH","HOME","DISPLAY","XAUTHORITY","WAYLAND_DISPLAY","LANG","LC_ALL","XDG_RUNTIME_DIR","DBUS_SESSION_BUS_ADDRESS",
              "LD_LIBRARY_PATH","FONTCONFIG_PATH","PLAYWRIGHT_BROWSERS_PATH","TMPDIR"}
     return {k:v for k,v in os.environ.items() if k in allowed}
 

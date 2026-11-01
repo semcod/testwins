@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0.0",
+  "ticketId": "ticket-018",
+  "title": "Opt-in autoupdate, config/browser display env fixes, live catalog/IPv6 server parity, and suite/staging hardening",
+  "owner": "antigravity",
+  "workstream": "cli-and-live",
+  "status": "IN_PROGRESS",
+  "phase": "EDIT",
+  "allowedPaths": [
+    "project/ticket-018/**",
+    "testwins/autoupdate.py",
+    "testwins/cli.py",
+    "testwins/config.py",
+    "testwins/browser.py",
+    "testwins/live/scanner.py",
+    "testwins/live/catalog.json",
+    "testwins/live/server.py",
+    "testwins/live/cli.py",
+    "testwins/suite.py",
+    "testwins/staging.py",
+    "tests/live/test_live_core.py",
+    "tests/test_cli_live_and_autoupdate.py"
+  ]
+}
