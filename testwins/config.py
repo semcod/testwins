@@ -1,5 +1,6 @@
 from __future__ import annotations
 import copy
+import os
 import re
 from pathlib import Path
 from urllib.parse import urljoin
@@ -136,8 +137,10 @@ def validate(cfg: dict) -> dict:
     if cfg["crawl"]["enabled"] and not cfg["crawl"]["allow_paths"]:
         raise ValueError("crawling requires explicit path allowlists")
     for container, key in [(cfg,"headless"),(cfg,"sandbox"),(cfg["capture"],"freeze_animations"),
+                           (cfg["capture"],"before_steps"),
                            (cfg["axe"],"enabled"),(cfg["axe"],"required"),(cfg["crawl"],"enabled"),
-                           (cfg["rules"],"heuristic_alignment"),(cfg["rules"],"duplicate_text"),
+                           (cfg["rules"],"heuristic_alignment"),(cfg["rules"],"auth_form_standards"),
+                           (cfg["rules"],"duplicate_text"),
                            (cfg["rules"],"duplicate_graphics"),(cfg["baseline"],"fail_on_difference")]:
         if type(container[key]) is not bool:raise ValueError(key+" must be boolean")
     bounded_int(cfg["rules"]["duplicate_text_min_chars"],8,500,"duplicate_text_min_chars")
@@ -189,4 +192,13 @@ def load(path: Path | None = None, **overrides: Any) -> dict:
             local=Path(session["storage_state"]).expanduser()
             if not local.is_absolute(): local=path.resolve().parent/local
             session["storage_state"]=str(local.absolute())
+    if cfg["axe"]["path"] == DEFAULT["axe"]["path"] and not Path(cfg["axe"]["path"]).is_file():
+        env_axe = os.environ.get("TESTWINS_AXE_PATH")
+        candidates = ([Path(env_axe)] if env_axe else []) + [
+            Path(__file__).with_name("resources") / "axe.min.js",
+            Path(__file__).resolve().parents[1] / "third_party" / "axe.min.js",
+        ]
+        found = next((p for p in candidates if p.is_file()), None)
+        if found is not None:
+            cfg["axe"]["path"] = str(found)
     return validate(cfg)

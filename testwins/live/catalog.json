@@ -1320,6 +1320,58 @@
       "detection": "gap",
       "automatic": false,
       "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-OVERLAY-CONTRACT",
+      "group": "layers",
+      "name": "Niespójny kontrakt warstwy nakładki",
+      "possible_causes": [
+        "brak aria-expanded lub aria-controls",
+        "rozjazd widoczności nakładki ze stanem wyzwalacza",
+        "nieautoryzowane zasłonięcie tła"
+      ],
+      "confirmation": "Zweryfikuj jawny kontrakt trigger -> overlay -> background i wynik hit-testu.",
+      "detection": "TW-OVERLAY-CONTRACT",
+      "automatic": true,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-STICKY-CONTRACT",
+      "group": "layout",
+      "name": "Nagłówek sticky zasłania treść poza kontraktem",
+      "possible_causes": [
+        "nieprzezroczysty lub przesunięty nagłówek sticky nad zwykłym przepływem tekstu",
+        "błędny kontener przewijania"
+      ],
+      "confirmation": "Przewiń kontener i porównaj pokrycie tekstu przez aktywny nagłówek sticky.",
+      "detection": "TW-STICKY-CONTRACT",
+      "automatic": true,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-TEXT-DUPLICATE",
+      "group": "consistency",
+      "name": "Zduplikowana treść tekstowa w widoku",
+      "possible_causes": [
+        "powielone bloki oferty lub sekcji",
+        "duplikacja komponentu bez specjalizacji"
+      ],
+      "confirmation": "Porównaj powtarzające się bloki treści w tym samym widoku.",
+      "detection": "TW-TEXT-DUPLICATE",
+      "automatic": true,
+      "root_cause_authority": "hypothesis-only"
+    },
+    {
+      "id": "GUI-GRAPHIC-DUPLICATE",
+      "group": "consistency",
+      "name": "Zduplikowana forma graficzna w widoku",
+      "possible_causes": [
+        "wielokrotne użycie identycznego SVG, obrazu lub wizualizacji"
+      ],
+      "confirmation": "Porównaj sygnatury elementów graficznych w obrębie jednego widoku.",
+      "detection": "TW-GRAPHIC-DUPLICATE",
+      "automatic": true,
+      "root_cause_authority": "hypothesis-only"
     }
   ]
 }
