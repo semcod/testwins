@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.0.0",
+  "ticketId": "ticket-021",
+  "title": "First-class testwins tui CLI subcommand wrapping PyteTerminalSurface",
+  "owner": "antigravity",
+  "workstream": "terminal-surface",
+  "status": "IN_PROGRESS",
+  "phase": "EDIT",
+  "allowedPaths": [
+    "project/ticket-021/**",
+    "pyproject.toml",
+    "testwins/cli.py",
+    "testwins/tui_cli.py",
+    "tests/test_tui_cli.py"
+  ]
+}
