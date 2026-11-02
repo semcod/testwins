@@ -13,6 +13,7 @@
     "testwins/__init__.py",
     "testwins/resources/minimal/shell.oql",
     "verification/summary.json",
-    "README.md"
+    "README.md",
+    "scenarios/shell.oql"
   ]
 }
