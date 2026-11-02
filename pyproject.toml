@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "testwins"
-version = "0.4.1"
+version = "0.4.2"
 description = "Evidence-first testing for web, shell and desktop with TestQL, CDP, LiteLLM and computer vision"
 readme = "README.md"
 requires-python = ">=3.11,<3.14"

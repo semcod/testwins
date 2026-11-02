@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "1.0.0",
+  "ticketId": "ticket-022",
+  "title": "Release testwins 0.4.2 version projection",
+  "owner": "antigravity",
+  "workstream": "release",
+  "status": "IN_PROGRESS",
+  "phase": "EDIT",
+  "allowedPaths": [
+    "project/ticket-022/**",
+    "VERSION",
+    "pyproject.toml",
+    "testwins/__init__.py",
+    "testwins/resources/minimal/shell.oql",
+    "verification/summary.json",
+    "README.md",
+    "scenarios/shell.oql"
+  ]
+}
