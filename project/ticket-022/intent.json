@@ -11,6 +11,8 @@
     "VERSION",
     "pyproject.toml",
     "testwins/__init__.py",
-    "testwins/resources/minimal/shell.oql"
+    "testwins/resources/minimal/shell.oql",
+    "verification/summary.json",
+    "README.md"
   ]
 }

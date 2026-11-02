@@ -1,6 +1,6 @@
 {
   "schema": "testwins.release-verification/v1",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "date": "2026-09-22",
   "unit_and_local": {
     "passed": 254,
