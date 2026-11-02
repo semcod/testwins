@@ -54,7 +54,9 @@ def parser() -> argparse.ArgumentParser:
     d=sub.add_parser('draft');d.add_argument('image',type=Path);d.add_argument('--snapshot',type=Path,required=True)
     d.add_argument('--goal',required=True);d.add_argument('--url',required=True);d.add_argument('--output',type=Path,required=True);d.add_argument('--env',type=Path,default=Path('.env'))
     from .live.cli import register
+    from .tui_cli import register_tui
     register(sub)
+    register_tui(sub)
     return p
 
 
@@ -69,6 +71,9 @@ def main(argv: list[str] | None=None) -> int:
         if a.command in {'watch','live-status','live-serve','live-export','capacity','diagnose','catalog'}:
             from .live.cli import dispatch
             return dispatch(a)
+        if a.command=='tui':
+            from .tui_cli import dispatch_tui
+            return dispatch_tui(a)
         if a.command=='strategies':
             from .ux import catalog
             print(json.dumps(catalog(), ensure_ascii=False, indent=2));return 0
