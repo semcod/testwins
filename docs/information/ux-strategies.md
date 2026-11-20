@@ -3,14 +3,14 @@
   "schema": "wellmanifest.docs/document/v1",
   "id": "ux-strategies",
   "kind": "information",
-  "version": 8,
+  "version": 9,
   "title": "Strategie UX, reakcje interfejsu i naprawy z subllm",
   "status": "implemented",
   "owner": "semcod/testwins",
   "created": "2026-09-23",
-  "updated": "2026-09-24",
+  "updated": "2026-11-20",
   "review_after": "2026-12-23",
-  "source_revision": "9bd5bc8e27329de7db3e405256eed90a0a7b7948",
+  "source_revision": "a286d1e5da852dff5e4e16fa08374050fea43506",
   "affected_repositories": [
     "semcod/testwins"
   ],
@@ -126,8 +126,11 @@ odpowiednich działań, np. `press` z `key: Enter`, zamiast kliknięć.
 | Przekaz informacji | `feedback`, `feedback_ms` | brak nowego komunikatu, zbyt późny komunikat |
 | Animacja | `motion`, `motion_ms` | długa lub nieskończona animacja CSS/Web Animation |
 
-`feedback` obsługuje `visible`, `text`, `contains_text`, `attribute`; element
-musi być widoczny. Stan pasujący już przed wejściem nie jest nowym potwierdzeniem.
+`feedback` obsługuje `visible`, `text`, `contains_text` i `attribute`.
+Pomiar rozpoczyna się przy akcji i rejestruje potwierdzenie, gdy stan pasuje
+oraz co najmniej część elementu znajduje się w widocznym obszarze strony.
+Status poniżej ekranu może więc potwierdzić akcję po przewinięciu do niego
+w czasie pomiaru. Stan pasujący i widoczny już przed akcją wymaga nowego przejścia.
 `visual_change` porównuje tekst, geometrię i wybrane style, więc sama klasa CSS
 bez efektu nie wystarczy. `motion` wymaga `capture.freeze_animations: false`.
 Brak elementu do pomiaru lub utrata dokumentu daje `incomplete`, nie sukces.
@@ -602,3 +605,11 @@ wcześniejszych kontroli. Rzeczywisty overflow w elemencie nazwanym `sr-only`
 lub oznaczonym `role=status` nadal jest raportowany. Przypadki pozytywne,
 negatywne, Shadow DOM i fokus sprawdza `tests/test_css_clipping_browser.py`;
 regresja w `tests/test_fail_closed.py` chroni wynik bramki.
+
+## Wersja 9. Komunikat po użyciu filtra na telefonie
+
+W katalogu sprzętu licznik wyników mógł się zmienić poniżej widocznego obszaru
+strony. Testwins zaliczał wtedy wizualne potwierdzenie, choć osoba dotykająca
+filtra nie widziała licznika. Testy w `tests/test_ux_browser.py` obejmują
+częściowo i całkowicie widoczne komunikaty, trzy położenia poza ekranem oraz
+odsłonięcie komunikatu przez przewinięcie w trakcie pomiaru.
