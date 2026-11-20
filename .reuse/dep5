@@ -1,0 +1,9 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: Testwins
+Source: https://github.com/semcod/testwins
+
+Files: testwins/resources/axe.min.js
+Copyright: 2015-2025 Deque Systems, Inc.
+           Additional copyright holders are listed in testwins/resources/axe-core-notices/LICENSE-3RD-PARTY.txt
+License: MPL-2.0 AND MIT AND ISC
+Comment: Unmodified axe-core 4.10.3 npm distribution. See THIRD_PARTY.md for source and integrity information.

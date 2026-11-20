@@ -13,8 +13,7 @@ COPY testwins ./testwins
 RUN python -m pip install --no-cache-dir -r requirements.txt \
     && python -m pip install --no-cache-dir --no-deps . \
     && mkdir -p /opt/testwins-assets \
-    && npm install --prefix /opt/testwins-assets --ignore-scripts --no-audit --no-fund axe-core@4.10.3 \
-    && cp /opt/testwins-assets/node_modules/axe-core/axe.min.js /opt/testwins-assets/axe.min.js
+    && ln -s /opt/testwins/testwins/resources/axe.min.js /opt/testwins-assets/axe.min.js
 ARG TESTQL_REF=main
 RUN python -m pip install --no-cache-dir "git+https://github.com/autogrammar/testql.git@${TESTQL_REF}" \
     && python -c "from testql.verification import VerificationRequest,run_verification"
