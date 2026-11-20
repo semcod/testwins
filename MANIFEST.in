@@ -1,4 +1,6 @@
 include README.md START.md LICENSE THIRD_PARTY.md Makefile requirements.txt .env.example
+include .reuse/dep5
+recursive-include testwins/resources/axe-core-notices *.txt
 include CHANGELOG.md .dockerignore .gitignore example.suite.yaml compose.live.yaml compose.live-novnc.yaml
 recursive-include testwins *.py *.js *.json *.yaml *.oql *.md *.html Makefile .gitignore
 recursive-include tools *.py

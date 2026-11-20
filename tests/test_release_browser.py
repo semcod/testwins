@@ -138,3 +138,28 @@ def test_real_cookie_state_import():
                 try:assert any(x['name']=='fixture' for x in await ctx.cookies())
                 finally:await ctx.close()
     asyncio.run(task())
+
+
+def test_bundled_axe_detects_missing_alt_offline(tmp_path, monkeypatch):
+    from testwins.config import DEFAULT
+
+    monkeypatch.delenv('TESTWINS_AXE_PATH', raising=False)
+    monkeypatch.setitem(DEFAULT['axe'], 'path', str(tmp_path / 'missing-axe.js'))
+    cfg = config()
+    cfg['axe'] = load()['axe']
+    cfg['capture']['timeout_ms'] = 10000
+    cfg['routes'] = [{'id': 'offline', 'path': '/'}]
+
+    async def fixture(page, url, **kwargs):
+        await page.context.set_offline(True)
+        await page.set_content('<html lang="en"><title>Offline audit</title>'
+                               '<main><h1>Images</h1><img src="data:image/png;base64,'
+                               'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8'
+                               '/x8AAwMCAO+jRZkAAAAASUVORK5CYII="></main></html>')
+
+    with patch.object(Page, 'goto', fixture):
+        root = asyncio.run(run(cfg, tmp_path))
+    report = json.loads((root / 'report.json').read_text())
+    assert report['coverage']['state'] == 'complete'
+    assert report['snapshots'][0]['axe'] == 'completed'
+    assert 'TW-AXE-IMAGE-ALT' in {finding['rule'] for finding in report['findings']}

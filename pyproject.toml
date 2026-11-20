@@ -45,7 +45,7 @@ testwins = "testwins.cli:main"
 include = ["testwins*"]
 
 [tool.setuptools.package-data]
-testwins = ["*.js", "*.json", "resources/**/*", "live/*.html", "live/*.js", "live/*.json"]
+testwins = ["*.js", "*.json", "resources/axe.min.js", "resources/**/*", "live/*.html", "live/*.js", "live/*.json"]
 
 [tool.setuptools.exclude-package-data]
 "*" = ["*.pyc", "*.pyo", "**/__pycache__/*"]
