@@ -29,10 +29,19 @@
     return true;
   };
   const readText = el => ((typeof el.innerText === 'string' ? el.innerText : el.textContent) || '').replace(/\s+/g, ' ').trim();
+  const inViewport = el => {
+    const viewport = window.visualViewport;
+    const left = viewport?.offsetLeft ?? 0, top = viewport?.offsetTop ?? 0;
+    const right = left + (viewport?.width ?? document.documentElement.clientWidth);
+    const bottom = top + (viewport?.height ?? document.documentElement.clientHeight);
+    return Array.from(el.getClientRects()).some(rect =>
+      Math.max(left, rect.left) < Math.min(right, rect.right) &&
+      Math.max(top, rect.top) < Math.min(bottom, rect.bottom));
+  };
   const feedback = () => {
     if (!spec.feedback) return false;
     const f = spec.feedback, el = one(f.selector);
-    if (!visible(el)) return false;
+    if (!visible(el) || !inViewport(el)) return false;
     const normalize = s => s.replace(/\s+/g, ' ').trim();
     if (f.kind === 'visible') return true;
     if (f.kind === 'attribute') return el.getAttribute(f.name) === f.value;

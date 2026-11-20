@@ -84,6 +84,53 @@ def test_feedback_must_be_visible_and_announced(page):
     assert 'TW-UX-FEEDBACK-MISSING' in {v['rule'] for v in finish(page,contract)['violations']}
 
 
+@pytest.mark.parametrize('left,top,expected', [
+    (8, 40, 'passed'),
+    (8, 630, 'passed'),
+    (8, 1600, 'failed'),
+    (390, 40, 'failed'),
+    (8, -50, 'failed'),
+])
+def test_touch_filter_feedback_in_visual_viewport(page, left, top, expected):
+    contract = {'strategy': 'commerce', 'habit': 'standard', 'response_ms': 3000,
+                'motion_ms': 200, 'feedback_ms': 150, 'announce': True,
+                'feedback': {'kind': 'text', 'selector': '#count', 'value': '3 products'}}
+    with page.context.browser.new_page(viewport={'width': 390, 'height': 650}, has_touch=True) as mobile:
+        mobile.set_content(f'''
+            <button id="choose" onclick="document.querySelector('#count').textContent='3 products'">
+                Apply filter
+            </button>
+            <output id="count" role="status"
+                    style="position:absolute;left:{left}px;top:{top}px;width:90px;height:32px"></output>
+        ''')
+        probe(mobile, contract)
+        mobile.locator('#choose').tap()
+        result = finish(mobile, contract)
+        assert result['status'] == expected, result
+        assert [v['rule'] for v in result['violations']] == (
+            ['TW-UX-FEEDBACK-MISSING'] if expected == 'failed' else []
+        )
+
+
+def test_filter_can_reveal_matching_feedback_by_scrolling(page):
+    page.locator('#status').evaluate("""el => {
+        el.style.cssText = 'position:absolute;top:2000px';
+        el.textContent = 'Ready';
+    }""")
+    page.locator('#choose').evaluate("""el => {
+        el.onclick = () => document.querySelector('#status').scrollIntoView();
+    }""")
+    contract = {'strategy': 'commerce', 'habit': 'standard', 'response_ms': 3000,
+                'motion_ms': 200, 'feedback_ms': 150,
+                'feedback': {'kind': 'text', 'selector': '#status', 'value': 'Ready'}}
+    probe(page, contract)
+    page.locator('#choose').click()
+    result = finish(page, contract)
+    assert result['status'] == 'passed', result
+    assert result['observations']['feedback_preexisting'] is False
+    assert result['observations']['feedback_ms'] is not None
+
+
 def test_response_budget_is_independent_of_eventual_success(page):
     page.locator('#choose').evaluate("e=>e.onclick=()=>setTimeout(()=>document.querySelector('#result').textContent='Done',200)")
     contract=spec(response_ms=70);probe(page,contract);page.locator('#choose').click()
